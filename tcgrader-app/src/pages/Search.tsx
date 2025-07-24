@@ -2,6 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { debounce } from '../utils/debounce';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
+import CardItem from '../components/cards/CardItem';
+import CardScanner from '../components/cards/CardScanner';
 import { Card, CardRarity } from '../types';
 import { RARITY_COLORS, CONDITION_NAMES } from '../constants';
 
@@ -10,6 +12,8 @@ const SearchPage: React.FC = () => {
   const [results, setResults] = useState<Card[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Debounced search function
   const performSearch = useCallback(
@@ -45,9 +49,19 @@ const SearchPage: React.FC = () => {
     performSearch(query);
   };
 
-  const handleScanCard = async () => {
-    // TODO: Implement camera scanning
-    console.log('Opening camera for card scanning...');
+  const handleScanCard = () => {
+    setShowScanner(true);
+  };
+
+  const handleCardScanned = (card: Card) => {
+    setResults([card]);
+    setShowScanner(false);
+    setHasSearched(true);
+  };
+
+  const handleScanError = (errorMessage: string) => {
+    setError(errorMessage);
+    setShowScanner(false);
   };
 
   return (
@@ -61,7 +75,37 @@ const SearchPage: React.FC = () => {
         </p>
       </header>
 
-      <div className="space-y-4 mb-6">
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <p className="text-red-800 dark:text-red-200">{error}</p>
+          <button 
+            onClick={() => setError(null)}
+            className="text-red-600 dark:text-red-400 text-sm mt-2 underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {showScanner ? (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Card Scanner</h2>
+            <Button 
+              variant="ghost" 
+              onClick={() => setShowScanner(false)}
+              className="text-2xl"
+            >
+              ×
+            </Button>
+          </div>
+          <CardScanner
+            onCardScanned={handleCardScanned}
+            onError={handleScanError}
+          />
+        </div>
+      ) : (
+        <div className="space-y-4 mb-6">
         <Input
           type="search"
           placeholder="Search by card name, set, or number..."
@@ -121,6 +165,7 @@ const SearchPage: React.FC = () => {
           </div>
         </div>
       </details>
+        )}
 
       {/* Results */}
       {isLoading ? (
@@ -139,36 +184,11 @@ const SearchPage: React.FC = () => {
       ) : results.length > 0 ? (
         <div className="grid grid-cols-2 gap-4">
           {results.map((card) => (
-            <div key={card.id} className="card hover:shadow-md transition-shadow cursor-pointer">
-              {card.frontImage ? (
-                <img
-                  src={card.frontImage}
-                  alt={card.name}
-                  className="w-full h-48 object-cover rounded-lg mb-3"
-                />
-              ) : (
-                <div className="w-full h-48 bg-gray-200 dark:bg-gray-700 rounded-lg mb-3 flex items-center justify-center">
-                  <span className="text-4xl">🎴</span>
-                </div>
-              )}
-              <h3 className="font-semibold text-sm mb-1 truncate">{card.name}</h3>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                {card.setName} • #{card.number}
-              </p>
-              <div className="flex items-center justify-between">
-                <span
-                  className="text-xs font-medium capitalize"
-                  style={{ color: RARITY_COLORS[card.rarity] }}
-                >
-                  {card.rarity}
-                </span>
-                {card.prices && (
-                  <span className="text-sm font-bold text-primary-600">
-                    ${card.prices.market.toFixed(2)}
-                  </span>
-                )}
-              </div>
-            </div>
+            <CardItem
+              key={card.id}
+              card={card}
+              onClick={() => console.log('Card clicked:', card.id)}
+            />
           ))}
         </div>
       ) : (

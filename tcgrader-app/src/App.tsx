@@ -13,6 +13,7 @@ import GradesPage from './pages/Grades';
 import SearchPage from './pages/Search';
 import ProfilePage from './pages/Profile';
 import SubscriptionPage from './pages/Subscription';
+import GradeSubmitPage from './pages/GradeSubmit';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -65,6 +66,12 @@ const App: React.FC = () => {
           <Route path="/subscription" element={
             <ProtectedRoute>
               <SubscriptionPage />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/grades/submit" element={
+            <ProtectedRoute>
+              <GradeSubmitPage />
             </ProtectedRoute>
           } />
         </Routes>
