@@ -38,8 +38,8 @@ export const SUBSCRIPTION_PRICES = {
   [SubscriptionType.BUSINESS]: 29.99
 };
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.tcgrader.com';
-export const STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLIC_KEY || '';
+export const API_BASE_URL = process.env.API_BASE_URL || 'https://api.tcgrader.com';
+export const STRIPE_PUBLIC_KEY = process.env.STRIPE_PUBLIC_KEY || '';
 
 export const ROUTES = {
   HOME: '/',

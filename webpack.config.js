@@ -2,6 +2,7 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const webpack = require('webpack');
 
 module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
@@ -29,7 +30,8 @@ module.exports = (env, argv) => {
                 '@babel/preset-env',
                 ['@babel/preset-react', { runtime: 'automatic' }],
                 '@babel/preset-typescript'
-              ]
+              ],
+              comments: true
             }
           }
         },
@@ -60,8 +62,16 @@ module.exports = (env, argv) => {
       }),
       new CopyWebpackPlugin({
         patterns: [
-          { from: 'public', to: '.', globOptions: { ignore: ['**/index.html'] } }
+          { 
+            from: 'public', 
+            to: '.', 
+            globOptions: { ignore: ['**/index.html'] },
+            noErrorOnMissing: true
+          }
         ]
+      }),
+      new webpack.DefinePlugin({
+        'process.env': JSON.stringify(process.env)
       })
     ].filter(Boolean),
     devServer: {

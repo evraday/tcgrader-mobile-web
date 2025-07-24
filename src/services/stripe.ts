@@ -87,9 +87,9 @@ class StripeService {
 
   getPriceIds() {
     return {
-      [SubscriptionType.BASIC]: process.env.VITE_STRIPE_BASIC_PRICE_ID || '',
-      [SubscriptionType.PRO]: process.env.VITE_STRIPE_PRO_PRICE_ID || '',
-      [SubscriptionType.BUSINESS]: process.env.VITE_STRIPE_BUSINESS_PRICE_ID || '',
+      [SubscriptionType.BASIC]: process.env.STRIPE_BASIC_PRICE_ID || '',
+      [SubscriptionType.PRO]: process.env.STRIPE_PRO_PRICE_ID || '',
+      [SubscriptionType.BUSINESS]: process.env.STRIPE_BUSINESS_PRICE_ID || '',
     };
   }
 }
