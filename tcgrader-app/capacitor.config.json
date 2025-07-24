@@ -1,0 +1,5 @@
+{
+  "appId": "com.tcgrader.app",
+  "appName": "TCGrader",
+  "webDir": "dist"
+}
