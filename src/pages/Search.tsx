@@ -124,6 +124,7 @@ const SearchPage: React.FC = () => {
           <span>Scan Card with Camera</span>
         </Button>
       </div>
+      )}
 
       {/* Search Filters */}
       <details className="mb-6">
