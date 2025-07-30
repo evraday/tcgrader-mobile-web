@@ -14,6 +14,11 @@ import SearchPage from './pages/Search';
 import ProfilePage from './pages/Profile';
 import SubscriptionPage from './pages/Subscription';
 import GradeSubmitPage from './pages/GradeSubmit';
+import NotificationsPage from './pages/settings/Notifications';
+import SecurityPage from './pages/settings/Security';
+import PrivacyPage from './pages/settings/Privacy';
+import ContactPage from './pages/Contact';
+import HelpCenterPage from './pages/Help';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -21,63 +26,108 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 };
 
 const App: React.FC = () => {
-  const { theme } = useUIStore();
+  const theme = useUIStore((state) => state.theme);
+  const setTheme = useUIStore((state) => state.setTheme);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
     // Initialize auth on app load
     authService.initialize();
+  }, []);
 
+  useEffect(() => {
     // Apply theme
-    if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    const effectiveTheme = user?.settings?.appearance?.theme || theme;
+    
+    if (effectiveTheme === 'dark' || (effectiveTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, [theme]);
+  }, [theme, user?.settings?.appearance?.theme]);
+
+  // Sync user theme preference when user data changes
+  useEffect(() => {
+    if (user?.settings?.appearance?.theme && user.settings.appearance.theme !== theme) {
+      setTheme(user.settings.appearance.theme);
+    }
+  }, [user?._id]); // Only run when user ID changes (login/logout)
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16">
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/search" element={<SearchPage />} />
+      <div className="md:bg-gray-100 min-h-screen">
+        <div className="md:mobile-container min-h-screen">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/search" element={<SearchPage />} />
+            
+            <Route path="/collection" element={
+              <ProtectedRoute>
+                <CollectionPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/grades" element={
+              <ProtectedRoute>
+                <GradesPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/subscription" element={
+              <ProtectedRoute>
+                <SubscriptionPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/grades/submit" element={
+              <ProtectedRoute>
+                <GradeSubmitPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/settings/notifications" element={
+              <ProtectedRoute>
+                <NotificationsPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/settings/security" element={
+              <ProtectedRoute>
+                <SecurityPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/settings/privacy" element={
+              <ProtectedRoute>
+                <PrivacyPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/contact" element={
+              <ProtectedRoute>
+                <ContactPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/help" element={
+              <ProtectedRoute>
+                <HelpCenterPage />
+              </ProtectedRoute>
+            } />
+          </Routes>
           
-          <Route path="/collection" element={
-            <ProtectedRoute>
-              <CollectionPage />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/grades" element={
-            <ProtectedRoute>
-              <GradesPage />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/profile" element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/subscription" element={
-            <ProtectedRoute>
-              <SubscriptionPage />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/grades/submit" element={
-            <ProtectedRoute>
-              <GradeSubmitPage />
-            </ProtectedRoute>
-          } />
-        </Routes>
-        
-        {/* Show tab bar on main pages */}
-        <TabBar />
+          {/* Show tab bar on main pages */}
+          <TabBar />
+        </div>
       </div>
     </Router>
   );

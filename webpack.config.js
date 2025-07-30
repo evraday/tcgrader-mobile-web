@@ -3,6 +3,14 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const webpack = require('webpack');
+const dotenv = require('dotenv');
+
+// Load environment variables from .env file
+dotenv.config();
+
+// Debug: Log loaded env vars (without exposing values)
+console.log('Environment variables loaded:');
+console.log('- RECAPTCHA_SITE_KEY:', process.env.RECAPTCHA_SITE_KEY ? 'Set' : 'Not set');
 
 module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
@@ -71,7 +79,10 @@ module.exports = (env, argv) => {
         ]
       }),
       new webpack.DefinePlugin({
-        'process.env': JSON.stringify(process.env)
+        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+        'process.env.API_BASE_URL': JSON.stringify(process.env.API_BASE_URL || ''),
+        'process.env.STRIPE_PUBLIC_KEY': JSON.stringify(process.env.STRIPE_PUBLIC_KEY || ''),
+        'process.env.RECAPTCHA_SITE_KEY': JSON.stringify(process.env.RECAPTCHA_SITE_KEY || '')
       })
     ].filter(Boolean),
     devServer: {
@@ -79,9 +90,27 @@ module.exports = (env, argv) => {
         directory: path.join(__dirname, 'public')
       },
       historyApiFallback: true,
-      port: 5173,
+      port: 3000,
       hot: true,
-      open: true
+      open: true,
+      client: {
+        overlay: {
+          errors: true,
+          warnings: false,
+          runtimeErrors: false
+        }
+      },
+      proxy: [
+        {
+          context: ['/api'],
+          target: 'https://www.tcgrader.com',
+          changeOrigin: true,
+          secure: false,
+          headers: {
+            'Origin': 'https://www.tcgrader.com'
+          }
+        }
+      ]
     },
     optimization: {
       splitChunks: {

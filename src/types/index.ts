@@ -1,11 +1,94 @@
 export interface User {
-  id: string;
+  _id: string;
+  id?: string; // For backward compatibility
   email: string;
   name: string;
+  username?: string;
+  fullName?: string;
+  bio?: string;
+  location?: string;
+  website?: string;
+  twitter?: string;
+  instagram?: string;
   avatar?: string;
-  subscription: Subscription;
-  createdAt: Date;
-  updatedAt: Date;
+  avatarId?: string;
+  headerImage?: string;
+  headerId?: string;
+  credits?: number;
+  role?: string;
+  emailVerified?: boolean;
+  subscription?: {
+    type: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  settings?: UserSettings;
+  isPremium?: boolean;
+  createdAt?: Date;
+  updatedAt?: string;
+  timestamp?: number;
+}
+
+export interface UserSettings {
+  appearance?: {
+    theme: 'light' | 'dark' | 'system';
+    cardDisplayDensity: string;
+    accentColor: string;
+    enableAnimations: boolean;
+    fontSize: string;
+  };
+  notifications?: {
+    email: NotificationPreferences;
+    push: NotificationPreferences;
+    inApp: NotificationPreferences;
+  };
+  privacy?: {
+    showEmail: boolean;
+    showCollectionValue: boolean;
+    showActivityHistory: boolean;
+    showSoldItems: boolean;
+    profileVisibility: string;
+    allowTagging: boolean;
+    allowDataAnalysis: boolean;
+  };
+  language?: {
+    preferredLanguage: string;
+    region: string;
+    dateFormat: string;
+    timeFormat: string;
+    currency: string;
+  };
+  trading?: {
+    defaultListingType: string;
+    autoDeclineThreshold: number;
+    offerValidity: number;
+    defaultShippingPolicy: string;
+    preferredPaymentMethods: string[];
+  };
+  grading?: {
+    defaultGradingMethod: string;
+    showPredictedValues: boolean;
+    saveHighResImages: boolean;
+    autoAddToCollection: boolean;
+  };
+  accessibility?: {
+    reduceMotion: boolean;
+    highContrast: boolean;
+    largeText: boolean;
+    screenReaderOptimization: boolean;
+    enableKeyboardShortcuts: boolean;
+  };
+}
+
+export interface NotificationPreferences {
+  messages: boolean;
+  offers: boolean;
+  priceDrop: boolean;
+  newListings: boolean;
+  priceUpdates: boolean;
+  promotions?: boolean;
+  newsletter?: boolean;
 }
 
 export interface Subscription {
@@ -93,9 +176,13 @@ export interface Collection {
   name: string;
   description?: string;
   isPublic: boolean;
-  cards: CollectionCard[];
-  totalValue: number;
-  totalCards: number;
+  cardCount: number;
+  value: number;
+  coverImage?: string | null;
+  isListed?: boolean;
+  cards?: CollectionCard[];
+  totalValue?: number;
+  totalCards?: number;
   createdAt: Date;
   updatedAt: Date;
 }

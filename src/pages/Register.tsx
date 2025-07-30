@@ -4,6 +4,7 @@ import authService from '../services/auth';
 import { useUIStore } from '../store';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
+import tcgraderLogo from '../assets/tcgrader-logo.png';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -76,65 +77,78 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8 safe-area-top">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="max-w-md w-full mx-auto px-5 py-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          <img src={tcgraderLogo} alt="TCGrader" className="h-20 w-auto mx-auto mb-6 float-animation" />
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Create Account
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gray-600">
             Start managing your collection today
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <Input
-            type="text"
-            name="name"
-            label="Full Name"
-            placeholder="John Doe"
-            value={formData.name}
-            onChange={handleChange}
-            error={errors.name}
-            required
-            autoComplete="name"
-          />
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+            <Input
+              type="text"
+              name="name"
+              placeholder="John Doe"
+              value={formData.name}
+              onChange={handleChange}
+              error={errors.name}
+              required
+              autoComplete="name"
+              className="w-full px-4 py-3 bg-white rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all"
+            />
+          </div>
 
-          <Input
-            type="email"
-            name="email"
-            label="Email"
-            placeholder="you@example.com"
-            value={formData.email}
-            onChange={handleChange}
-            error={errors.email}
-            required
-            autoComplete="email"
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+            <Input
+              type="email"
+              name="email"
+              placeholder="you@example.com"
+              value={formData.email}
+              onChange={handleChange}
+              error={errors.email}
+              required
+              autoComplete="email"
+              className="w-full px-4 py-3 bg-white rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all"
+            />
+          </div>
 
-          <Input
-            type="password"
-            name="password"
-            label="Password"
-            placeholder="••••••••"
-            value={formData.password}
-            onChange={handleChange}
-            error={errors.password}
-            required
-            autoComplete="new-password"
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+            <Input
+              type="password"
+              name="password"
+              placeholder="••••••••"
+              value={formData.password}
+              onChange={handleChange}
+              error={errors.password}
+              required
+              autoComplete="new-password"
+              className="w-full px-4 py-3 bg-white rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all"
+            />
+          </div>
 
-          <Input
-            type="password"
-            name="confirmPassword"
-            label="Confirm Password"
-            placeholder="••••••••"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            error={errors.confirmPassword}
-            required
-            autoComplete="new-password"
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+            <Input
+              type="password"
+              name="confirmPassword"
+              placeholder="••••••••"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              error={errors.confirmPassword}
+              required
+              autoComplete="new-password"
+              className="w-full px-4 py-3 bg-white rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all"
+            />
+          </div>
 
           <div className="space-y-4">
             <label className="flex items-start">
@@ -143,38 +157,61 @@ const RegisterPage: React.FC = () => {
                 className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mt-1"
                 required
               />
-              <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+              <span className="ml-2 text-sm text-gray-600">
                 I agree to the{' '}
-                <Link to="/terms" className="text-primary-600 hover:text-primary-500">
+                <Link to="/terms" className="text-primary-600 hover:text-primary-700 font-medium">
                   Terms of Service
                 </Link>{' '}
                 and{' '}
-                <Link to="/privacy" className="text-primary-600 hover:text-primary-500">
+                <Link to="/privacy" className="text-primary-600 hover:text-primary-700 font-medium">
                   Privacy Policy
                 </Link>
               </span>
             </label>
 
-            <Button type="submit" fullWidth size="lg">
+            <Button type="submit" fullWidth size="lg" variant="primary">
               Create Free Account
             </Button>
           </div>
 
-          <div className="card bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800">
-            <h3 className="font-semibold text-primary-900 dark:text-primary-100 mb-2">
+          <div className="bg-gradient-to-br from-primary-50 to-blue-50 rounded-2xl p-5 border border-primary-100">
+            <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+              <svg className="w-5 h-5 text-primary-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+              </svg>
               Free Plan Includes:
             </h3>
-            <ul className="space-y-1 text-sm text-primary-800 dark:text-primary-200">
-              <li>• 5 free card grades per month</li>
-              <li>• 1 collection with unlimited cards</li>
-              <li>• Basic price tracking</li>
-              <li>• Mobile app access</li>
+            <ul className="space-y-2 text-sm text-gray-700">
+              <li className="flex items-start">
+                <svg className="w-4 h-4 text-success-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>5 free card grades per month</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="w-4 h-4 text-success-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>1 collection with unlimited cards</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="w-4 h-4 text-success-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Basic price tracking</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="w-4 h-4 text-success-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Mobile app access</span>
+              </li>
             </ul>
           </div>
 
-          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-center text-sm text-gray-600">
             Already have an account?{' '}
-            <Link to="/login" className="text-primary-600 hover:text-primary-500 font-medium">
+            <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">
               Sign in
             </Link>
           </p>

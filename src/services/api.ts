@@ -39,165 +39,190 @@ class ApiService {
   }
 
   // Auth endpoints
-  async login(email: string, password: string) {
-    const response = await this.api.post('/auth/login', { email, password });
+  async login(email: string, password: string, captchaToken?: string) {
+    const response = await this.api.post('/api/auth/login', { 
+      email, 
+      password,
+      captchaToken: captchaToken || ''
+    });
     return response.data;
   }
 
   async register(email: string, password: string, name: string) {
-    const response = await this.api.post('/auth/register', { email, password, name });
+    const response = await this.api.post('/api/auth/register', { email, password, name });
     return response.data;
   }
 
   async forgotPassword(email: string) {
-    const response = await this.api.post('/auth/forgot-password', { email });
+    const response = await this.api.post('/api/auth/forgot-password', { email });
     return response.data;
   }
 
   async resetPassword(token: string, password: string) {
-    const response = await this.api.post('/auth/reset-password', { token, password });
+    const response = await this.api.post('/api/auth/reset-password', { token, password });
     return response.data;
   }
 
   async refreshToken() {
-    const response = await this.api.post('/auth/refresh');
+    const response = await this.api.post('/api/auth/refresh');
     return response.data;
   }
 
   // User endpoints
   async getProfile() {
-    const response = await this.api.get('/user/profile');
+    const response = await this.api.get('/api/user/profile');
     return response.data;
   }
 
   async updateProfile(data: FormData) {
-    const response = await this.api.patch('/user/profile', data, {
+    const response = await this.api.patch('/api/user/profile', data, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     return response.data;
   }
 
+  async updateNotificationSettings(settings: any) {
+    const response = await this.api.patch('/api/user/settings/notifications', settings);
+    return response.data;
+  }
+
+  async updateSecuritySettings(settings: any) {
+    const response = await this.api.patch('/api/user/settings/security', settings);
+    return response.data;
+  }
+
   // Subscription endpoints
   async getSubscription() {
-    const response = await this.api.get('/subscription');
+    const response = await this.api.get('/api/subscription');
     return response.data;
   }
 
   async createCheckoutSession(priceId: string) {
-    const response = await this.api.post('/subscription/checkout', { priceId });
+    const response = await this.api.post('/api/subscription/checkout', { priceId });
     return response.data;
   }
 
   async cancelSubscription() {
-    const response = await this.api.post('/subscription/cancel');
+    const response = await this.api.post('/api/subscription/cancel');
     return response.data;
   }
 
   async getUsage() {
-    const response = await this.api.get('/subscription/usage');
+    const response = await this.api.get('/api/subscription/usage');
     return response.data;
   }
 
   // Collection endpoints
   async getCollections() {
-    const response = await this.api.get('/collections');
+    const response = await this.api.get('/api/collections');
     return response.data;
   }
 
   async getCollection(id: string) {
-    const response = await this.api.get(`/collections/${id}`);
+    const response = await this.api.get(`/api/collections/${id}`);
     return response.data;
   }
 
   async createCollection(data: { name: string; description?: string; isPublic: boolean }) {
-    const response = await this.api.post('/collections', data);
+    const response = await this.api.post('/api/collections', data);
     return response.data;
   }
 
   async updateCollection(id: string, data: Partial<{ name: string; description?: string; isPublic: boolean }>) {
-    const response = await this.api.patch(`/collections/${id}`, data);
+    const response = await this.api.patch(`/api/collections/${id}`, data);
     return response.data;
   }
 
   async deleteCollection(id: string) {
-    await this.api.delete(`/collections/${id}`);
+    await this.api.delete(`/api/collections/${id}`);
   }
 
   async addCardToCollection(collectionId: string, cardData: any) {
-    const response = await this.api.post(`/collections/${collectionId}/cards`, cardData);
+    const response = await this.api.post(`/api/collections/${collectionId}/cards`, cardData);
     return response.data;
   }
 
   async removeCardFromCollection(collectionId: string, cardId: string) {
-    await this.api.delete(`/collections/${collectionId}/cards/${cardId}`);
+    await this.api.delete(`/api/collections/${collectionId}/cards/${cardId}`);
   }
 
   // Card endpoints
   async searchCards(query: string, filters?: any) {
-    const response = await this.api.get('/cards/search', { params: { q: query, ...filters } });
+    const response = await this.api.get('/api/cards/search', { params: { q: query, ...filters } });
     return response.data;
   }
 
   async getCard(id: string) {
-    const response = await this.api.get(`/cards/${id}`);
+    const response = await this.api.get(`/api/cards/${id}`);
     return response.data;
   }
 
   async scanCard(image: Blob) {
     const formData = new FormData();
     formData.append('image', image);
-    const response = await this.api.post('/cards/scan', formData, {
+    const response = await this.api.post('/api/cards/scan', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     return response.data;
   }
 
   async getPriceHistory(cardId: string, days: number = 30) {
-    const response = await this.api.get(`/cards/${cardId}/prices`, { params: { days } });
+    const response = await this.api.get(`/api/cards/${cardId}/prices`, { params: { days } });
+    return response.data;
+  }
+
+  async getMyCards() {
+    const response = await this.api.get('/api/cards/me');
+    return response.data;
+  }
+
+  // Marketplace endpoints
+  async getMyListings() {
+    const response = await this.api.get('/api/marketplace/me');
     return response.data;
   }
 
   // Grade endpoints
   async getGrades() {
-    const response = await this.api.get('/grades');
+    const response = await this.api.get('/api/grades');
     return response.data;
   }
 
   async getGrade(id: string) {
-    const response = await this.api.get(`/grades/${id}`);
+    const response = await this.api.get(`/api/grades/${id}`);
     return response.data;
   }
 
   async createGradeSubmission(data: FormData) {
-    const response = await this.api.post('/grades/submit', data, {
+    const response = await this.api.post('/api/grades/submit', data, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     return response.data;
   }
 
   async updateGradeStatus(id: string, status: string, data?: any) {
-    const response = await this.api.patch(`/grades/${id}/status`, { status, ...data });
+    const response = await this.api.patch(`/api/grades/${id}/status`, { status, ...data });
     return response.data;
   }
 
   // Price alert endpoints
   async getPriceAlerts() {
-    const response = await this.api.get('/alerts');
+    const response = await this.api.get('/api/alerts');
     return response.data;
   }
 
   async createPriceAlert(data: any) {
-    const response = await this.api.post('/alerts', data);
+    const response = await this.api.post('/api/alerts', data);
     return response.data;
   }
 
   async updatePriceAlert(id: string, data: any) {
-    const response = await this.api.patch(`/alerts/${id}`, data);
+    const response = await this.api.patch(`/api/alerts/${id}`, data);
     return response.data;
   }
 
   async deletePriceAlert(id: string) {
-    await this.api.delete(`/alerts/${id}`);
+    await this.api.delete(`/api/alerts/${id}`);
   }
 
   // Image upload
@@ -205,7 +230,7 @@ class ApiService {
     const formData = new FormData();
     formData.append('image', file);
     formData.append('type', type);
-    const response = await this.api.post('/upload', formData, {
+    const response = await this.api.post('/api/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     return response.data;

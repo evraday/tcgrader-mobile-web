@@ -38,8 +38,12 @@ export const SUBSCRIPTION_PRICES = {
   [SubscriptionType.BUSINESS]: 29.99
 };
 
-export const API_BASE_URL = process.env.API_BASE_URL || 'https://api.tcgrader.com';
+export const API_BASE_URL = process.env.NODE_ENV === 'development' 
+  ? '' // Use proxy in development
+  : (process.env.API_BASE_URL || 'https://www.tcgrader.com');
 export const STRIPE_PUBLIC_KEY = process.env.STRIPE_PUBLIC_KEY || '';
+// Note: You need to get your own reCAPTCHA site key from https://www.google.com/recaptcha/admin
+export const RECAPTCHA_SITE_KEY = process.env.RECAPTCHA_SITE_KEY || '';
 
 export const ROUTES = {
   HOME: '/',

@@ -11,9 +11,38 @@ class AuthService {
   async initialize() {
     try {
       const { value: token } = await Preferences.get({ key: TOKEN_KEY });
+      const currentState = useAuthStore.getState();
+      
+      // If we already have user data and token matches, don't refetch
+      if (currentState.user && currentState.token === token && token) {
+        return;
+      }
+      
       if (token) {
-        const profile = await apiService.getProfile();
-        useAuthStore.getState().login(profile.user, token);
+        try {
+          const profile = await apiService.getProfile();
+          if (profile.user) {
+            // Clean user data - remove sensitive fields
+            const { password: _, passwordHash, confirm, ...user } = profile.user;
+            
+            // Add computed fields
+            user.isPremium = user.subscription?.type !== 'free';
+            user.id = user._id; // For backward compatibility
+            
+            // Merge with existing user data to preserve fields like credits
+            const existingUser = currentState.user;
+            const mergedUser = existingUser ? { ...existingUser, ...user } : user;
+            
+            useAuthStore.getState().login(mergedUser, token);
+          }
+        } catch (profileError) {
+          // If profile fetch fails but we have stored user data, keep it
+          if (currentState.user && currentState.token === token) {
+            console.warn('Failed to refresh profile, using cached data');
+            return;
+          }
+          throw profileError;
+        }
       }
     } catch (error) {
       console.error('Failed to initialize auth:', error);
@@ -21,9 +50,16 @@ class AuthService {
     }
   }
 
-  async login(email: string, password: string): Promise<{ user: User; token: string }> {
-    const response = await apiService.login(email, password);
-    const { user, token } = response;
+  async login(email: string, password: string, captchaToken?: string): Promise<{ user: User; token: string }> {
+    const response = await apiService.login(email, password, captchaToken);
+    const { user: rawUser, token } = response;
+    
+    // Clean user data - remove sensitive fields
+    const { password: _, passwordHash, confirm, ...user } = rawUser;
+    
+    // Add computed fields
+    user.isPremium = user.subscription?.type !== 'free';
+    user.id = user._id; // For backward compatibility
     
     await Preferences.set({ key: TOKEN_KEY, value: token });
     useAuthStore.getState().login(user, token);

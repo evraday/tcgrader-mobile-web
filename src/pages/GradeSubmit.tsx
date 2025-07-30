@@ -21,7 +21,7 @@ const GradeSubmitPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const limits = user ? SUBSCRIPTION_LIMITS[user.subscription.type] : null;
+  const limits = user ? SUBSCRIPTION_LIMITS[user.isPremium ? 'premium' : 'free'] : null;
   const canSubmit = limits && (limits.gradesPerMonth === -1 || true); // TODO: Check actual usage
 
   const handleCardScanned = (card: Card) => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store';
 
 interface TabItem {
@@ -18,32 +18,8 @@ const tabs: TabItem[] = [
 ];
 
 const TabBar: React.FC = () => {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-
-  const visibleTabs = tabs.filter(tab => !tab.requiresAuth || isAuthenticated);
-
-  return (
-    <nav className="tab-bar safe-area-bottom">
-      <div className="grid grid-cols-5 h-16">
-        {visibleTabs.map((tab) => (
-          <NavLink
-            key={tab.path}
-            to={tab.path}
-            className={({ isActive }) =>
-              `flex flex-col items-center justify-center space-y-1 transition-colors ${
-                isActive
-                  ? 'text-primary-600 dark:text-primary-400'
-                  : 'text-gray-500 dark:text-gray-400'
-              }`
-            }
-          >
-            <span className="text-2xl">{tab.icon}</span>
-            <span className="text-xs font-medium">{tab.label}</span>
-          </NavLink>
-        ))}
-      </div>
-    </nav>
-  );
+  // Tab bar is completely disabled - return null for all pages
+  return null;
 };
 
 export default TabBar;
