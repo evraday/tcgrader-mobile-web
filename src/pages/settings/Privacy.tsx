@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store';
 import Button from '../../components/common/Button';
 import tcgraderLogo from '../../assets/tcgrader-logo.png';
+import ApiService from '../../services/api';
 
 interface PrivacySetting {
   id: string;
@@ -19,6 +20,11 @@ const PrivacyPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [showDataRequest, setShowDataRequest] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [isRequestingData, setIsRequestingData] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteAccountPassword, setDeleteAccountPassword] = useState('');
+  const [dataExportSuccess, setDataExportSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const [privacySettings, setPrivacySettings] = useState<PrivacySetting[]>([
     // Visibility Settings
@@ -86,27 +92,62 @@ const PrivacyPage: React.FC = () => {
 
   const handleSave = async () => {
     setIsSaving(true);
+    setError(null);
     try {
-      // TODO: Save privacy settings to API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const settingsObject = privacySettings.reduce((acc, setting) => {
+        acc[setting.id] = setting.enabled;
+        return acc;
+      }, {} as Record<string, boolean>);
+      
+      await ApiService.updatePrivacySettings(settingsObject);
       setHasChanges(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save privacy settings:', error);
+      setError(error.response?.data?.message || 'Failed to save privacy settings');
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDataRequest = async () => {
-    // TODO: Request data export
-    console.log('Requesting data export...');
-    setShowDataRequest(false);
+    setIsRequestingData(true);
+    setError(null);
+    try {
+      await ApiService.requestDataExport();
+      setDataExportSuccess(true);
+      setShowDataRequest(false);
+      
+      // Show success message for 5 seconds
+      setTimeout(() => {
+        setDataExportSuccess(false);
+      }, 5000);
+    } catch (error: any) {
+      console.error('Failed to request data export:', error);
+      setError(error.response?.data?.message || 'Failed to request data export. Please try again.');
+    } finally {
+      setIsRequestingData(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
-    // TODO: Delete account
-    console.log('Deleting account...');
-    setShowDeleteAccount(false);
+    if (!deleteAccountPassword) {
+      setError('Please enter your password to confirm account deletion');
+      return;
+    }
+    
+    setIsDeletingAccount(true);
+    setError(null);
+    try {
+      await ApiService.deleteAccount(deleteAccountPassword);
+      // Logout user after successful deletion
+      useAuthStore.getState().logout();
+      navigate('/login');
+    } catch (error: any) {
+      console.error('Failed to delete account:', error);
+      setError(error.response?.data?.message || 'Failed to delete account. Please check your password and try again.');
+    } finally {
+      setIsDeletingAccount(false);
+    }
   };
 
   const groupedSettings = {
@@ -256,6 +297,24 @@ const PrivacyPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Success Message */}
+        {dataExportSuccess && (
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4">
+            <p className="text-sm text-green-800">
+              ✓ Data export requested successfully! You'll receive an email when your data is ready to download.
+            </p>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+            <p className="text-sm text-red-800">
+              {error}
+            </p>
+          </div>
+        )}
+
         {/* Data Management */}
         <div className="mb-8">
           <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center">
@@ -337,13 +396,19 @@ const PrivacyPage: React.FC = () => {
                   variant="primary"
                   onClick={handleDataRequest}
                   className="flex-1"
+                  loading={isRequestingData}
+                  disabled={isRequestingData}
                 >
                   Request Data
                 </Button>
                 <Button
                   variant="secondary"
-                  onClick={() => setShowDataRequest(false)}
+                  onClick={() => {
+                    setShowDataRequest(false);
+                    setError(null);
+                  }}
                   className="flex-1"
+                  disabled={isRequestingData}
                 >
                   Cancel
                 </Button>
@@ -357,14 +422,40 @@ const PrivacyPage: React.FC = () => {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-5 z-50">
             <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
               <h3 className="text-lg font-semibold text-red-600 mb-3">Delete Account</h3>
-              <p className="text-sm text-gray-600 mb-5">
+              <p className="text-sm text-gray-600 mb-4">
                 This action cannot be undone. All your data, collections, and grade history will be permanently deleted.
               </p>
+              
+              <div className="mb-5">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Enter your password to confirm
+                </label>
+                <input
+                  type="password"
+                  value={deleteAccountPassword}
+                  onChange={(e) => setDeleteAccountPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  placeholder="Password"
+                  disabled={isDeletingAccount}
+                />
+              </div>
+              
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-800">{error}</p>
+                </div>
+              )}
+              
               <div className="flex space-x-3">
                 <Button
                   variant="secondary"
-                  onClick={() => setShowDeleteAccount(false)}
+                  onClick={() => {
+                    setShowDeleteAccount(false);
+                    setDeleteAccountPassword('');
+                    setError(null);
+                  }}
                   className="flex-1"
+                  disabled={isDeletingAccount}
                 >
                   Cancel
                 </Button>
@@ -372,6 +463,8 @@ const PrivacyPage: React.FC = () => {
                   variant="danger"
                   onClick={handleDeleteAccount}
                   className="flex-1 bg-red-600 hover:bg-red-700"
+                  loading={isDeletingAccount}
+                  disabled={isDeletingAccount || !deleteAccountPassword}
                 >
                   Delete Account
                 </Button>
