@@ -21,7 +21,7 @@ const CollectionPage: React.FC = () => {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const subscriptionLimits = user ? SUBSCRIPTION_LIMITS[user.isPremium ? 'premium' : 'free'] : null;
+  const subscriptionLimits = user ? SUBSCRIPTION_LIMITS[user.subscription?.type || 'free'] : null;
   const canCreateCollection = subscriptionLimits && (
     subscriptionLimits.collectionsAllowed === -1 || 
     collections.length < subscriptionLimits.collectionsAllowed
