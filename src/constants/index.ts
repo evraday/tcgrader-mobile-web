@@ -1,6 +1,34 @@
 import { SubscriptionType, SubscriptionLimits } from '../types';
 
-export const SUBSCRIPTION_LIMITS: Record<SubscriptionType, SubscriptionLimits> = {
+export const SUBSCRIPTION_LIMITS: Record<string, SubscriptionLimits> = {
+  free: {
+    gradesPerMonth: 5,
+    collectionsAllowed: 1,
+    priceTrackingInterval: 'none',
+    bulkOperations: false,
+    apiAccess: false
+  },
+  collector: {
+    gradesPerMonth: 100,
+    collectionsAllowed: -1, // unlimited
+    priceTrackingInterval: 'realtime',
+    bulkOperations: true,
+    apiAccess: true
+  },
+  appraiser: {
+    gradesPerMonth: 100,
+    collectionsAllowed: 5,
+    priceTrackingInterval: 'daily',
+    bulkOperations: true,
+    apiAccess: false
+  },
+  merchant: {
+    gradesPerMonth: 10,
+    collectionsAllowed: -1, // unlimited
+    priceTrackingInterval: 'realtime',
+    bulkOperations: true,
+    apiAccess: true
+  },
   [SubscriptionType.FREE]: {
     gradesPerMonth: 5,
     collectionsAllowed: 1,

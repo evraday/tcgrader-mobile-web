@@ -75,9 +75,7 @@ class ApiService {
   }
 
   async updateProfile(data: FormData) {
-    const response = await this.api.patch('/api/user/profile', data, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
+    const response = await this.api.patch('/api/user/profile', data);
     return response.data;
   }
 
@@ -160,9 +158,7 @@ class ApiService {
   async scanCard(image: Blob) {
     const formData = new FormData();
     formData.append('image', image);
-    const response = await this.api.post('/api/cards/scan', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
+    const response = await this.api.post('/api/cards/scan', formData);
     return response.data;
   }
 
@@ -194,9 +190,7 @@ class ApiService {
   }
 
   async createGradeSubmission(data: FormData) {
-    const response = await this.api.post('/api/grades/submit', data, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
+    const response = await this.api.post('/api/grades/submit', data);
     return response.data;
   }
 
@@ -230,9 +224,7 @@ class ApiService {
     const formData = new FormData();
     formData.append('image', file);
     formData.append('type', type);
-    const response = await this.api.post('/api/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
+    const response = await this.api.post('/api/upload', formData);
     return response.data;
   }
 

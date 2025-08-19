@@ -21,8 +21,9 @@ const GradeSubmitPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const limits = user ? SUBSCRIPTION_LIMITS[user.isPremium ? 'premium' : 'free'] : null;
-  const canSubmit = limits && (limits.gradesPerMonth === -1 || true); // TODO: Check actual usage
+  const subscriptionType = user?.subscription?.type || 'free';
+  const limits = user ? SUBSCRIPTION_LIMITS[subscriptionType] : null;
+  const canSubmit = limits && (limits.gradesPerMonth === -1 || limits.gradesPerMonth > 0); // TODO: Check actual usage
 
   const handleCardScanned = (card: Card) => {
     setSelectedCard(card);
@@ -67,7 +68,16 @@ const GradeSubmitPage: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!selectedCard || !gradingService || !images) return;
+    if (!selectedCard || !gradingService || !images) {
+      setError('Please complete all steps before submitting');
+      return;
+    }
+
+    if (!user) {
+      setError('You must be logged in to submit for grading');
+      navigate('/login');
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -75,9 +85,18 @@ const GradeSubmitPage: React.FC = () => {
       // Create form data
       const formData = new FormData();
       formData.append('cardId', selectedCard.id);
+      formData.append('cardName', selectedCard.name);
+      formData.append('setName', selectedCard.setName);
+      formData.append('setCode', selectedCard.setCode);
+      formData.append('number', selectedCard.number);
       formData.append('service', gradingService);
+      formData.append('userId', user.id || user._id);
       
       // Add images
+      if (!images.front || !images.back) {
+        throw new Error('Front and back images are required');
+      }
+      
       const frontBlob = await fetch(images.front).then(r => r.blob());
       const backBlob = await fetch(images.back).then(r => r.blob());
       
@@ -96,7 +115,9 @@ const GradeSubmitPage: React.FC = () => {
       
       navigate('/grades');
     } catch (error: any) {
-      setError(error.message || 'Failed to submit for grading');
+      console.error('Grade submission error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to submit for grading';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

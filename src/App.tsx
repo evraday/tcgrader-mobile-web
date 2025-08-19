@@ -19,6 +19,7 @@ import SecurityPage from './pages/settings/Security';
 import PrivacyPage from './pages/settings/Privacy';
 import ContactPage from './pages/Contact';
 import HelpCenterPage from './pages/Help';
+import MarketPage from './pages/Market';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -63,6 +64,7 @@ const App: React.FC = () => {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/search" element={<SearchPage />} />
+            <Route path="/market" element={<MarketPage />} />
             
             <Route path="/collection" element={
               <ProtectedRoute>
