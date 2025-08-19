@@ -166,7 +166,6 @@ const SearchPage: React.FC = () => {
           </div>
         </div>
       </details>
-        )}
 
       {/* Results */}
       {isLoading ? (
