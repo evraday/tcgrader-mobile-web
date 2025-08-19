@@ -5,6 +5,7 @@ import { SUBSCRIPTION_LIMITS, GRADING_SERVICE_NAMES } from '../constants';
 import { GradeStatus } from '../types';
 import Button from '../components/common/Button';
 import tcgraderLogo from '../assets/tcgrader-logo.png';
+import api from '../services/api';
 
 const GradesPage: React.FC = () => {
   const { grades, setGrades } = useGradeStore();
@@ -20,16 +21,27 @@ const GradesPage: React.FC = () => {
     : 0;
 
   useEffect(() => {
-    // TODO: Fetch grades from API
-    // Calculate current month grades
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthGrades = grades.filter(grade => 
-      new Date(grade.submittedAt) >= monthStart
-    ).length;
-    setCurrentMonthGrades(monthGrades);
-    setIsLoading(false);
-  }, [grades]);
+    fetchGrades();
+  }, []);
+
+  const fetchGrades = async () => {
+    try {
+      const response = await api.getGrades();
+      setGrades(response.grades || []);
+      
+      // Calculate current month grades
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const monthGrades = (response.grades || []).filter((grade: any) => 
+        new Date(grade.submittedAt) >= monthStart
+      ).length;
+      setCurrentMonthGrades(monthGrades);
+    } catch (error) {
+      console.error('Failed to fetch grades:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const getStatusColor = (status: GradeStatus) => {
     switch (status) {
@@ -152,7 +164,11 @@ const GradesPage: React.FC = () => {
             <p className="text-xs text-gray-600 mt-1">In Progress</p>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm text-center">
-            <p className="text-2xl font-bold text-gray-900">9.2</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {grades.length > 0 ? (
+                grades.filter(g => g.grade).reduce((acc, g) => acc + (g.grade || 0), 0) / grades.filter(g => g.grade).length || 0
+              ).toFixed(1) : '-'}
+            </p>
             <p className="text-xs text-gray-600 mt-1">Avg. Grade</p>
           </div>
         </div>
