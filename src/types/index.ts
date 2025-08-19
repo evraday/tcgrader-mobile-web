@@ -52,6 +52,10 @@ export interface UserSettings {
     allowTagging: boolean;
     allowDataAnalysis: boolean;
   };
+  security?: {
+    twoFactorEnabled: boolean;
+    passwordLastChanged?: string;
+  };
   language?: {
     preferredLanguage: string;
     region: string;

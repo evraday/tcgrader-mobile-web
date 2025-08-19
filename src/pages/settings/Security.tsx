@@ -303,14 +303,22 @@ const SecurityPage: React.FC = () => {
               </div>
               <button
                 onClick={async () => {
-                  if (twoFactorEnabled) {
+                  const newValue = !twoFactorEnabled;
+                  
+                  if (newValue) {
+                    // Enable 2FA - show setup
+                    setShowTwoFactorSetup(true);
+                  } else {
                     // Disable 2FA
                     try {
                       await apiService.updateSecuritySettings({
                         twoFactorEnabled: false
                       });
                       setTwoFactorEnabled(false);
-                      useAuthStore.getState().updateUser({
+                      
+                      // Update the user state properly
+                      const updatedUser = {
+                        ...user,
                         settings: {
                           ...user?.settings,
                           security: {
@@ -318,18 +326,20 @@ const SecurityPage: React.FC = () => {
                             twoFactorEnabled: false
                           }
                         }
-                      });
+                      };
+                      useAuthStore.getState().updateUser(updatedUser);
                     } catch (error) {
                       console.error('Failed to disable 2FA:', error);
                       alert('Failed to disable 2FA. Please try again.');
+                      // Revert the state if API call fails
+                      setTwoFactorEnabled(true);
                     }
-                  } else {
-                    setShowTwoFactorSetup(true);
                   }
                 }}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                   twoFactorEnabled ? 'bg-primary-600' : 'bg-gray-200'
                 }`}
+                aria-label="Toggle two-factor authentication"
               >
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -356,7 +366,10 @@ const SecurityPage: React.FC = () => {
                     });
                     setTwoFactorEnabled(true);
                     setShowTwoFactorSetup(false);
-                    useAuthStore.getState().updateUser({
+                    
+                    // Update the user state properly
+                    const updatedUser = {
+                      ...user,
                       settings: {
                         ...user?.settings,
                         security: {
@@ -364,11 +377,15 @@ const SecurityPage: React.FC = () => {
                           twoFactorEnabled: true
                         }
                       }
-                    });
+                    };
+                    useAuthStore.getState().updateUser(updatedUser);
                     alert('Two-factor authentication has been enabled!');
                   } catch (error) {
                     console.error('Failed to enable 2FA:', error);
                     alert('Failed to enable 2FA. Please try again.');
+                    // Revert the state if API call fails
+                    setTwoFactorEnabled(false);
+                    setShowTwoFactorSetup(false);
                   }
                 }}
               >
