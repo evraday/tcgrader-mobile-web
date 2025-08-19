@@ -20,6 +20,7 @@ import PrivacyPage from './pages/settings/Privacy';
 import ContactPage from './pages/Contact';
 import HelpCenterPage from './pages/Help';
 import MarketPage from './pages/Market';
+import ProfileEditPage from './pages/ProfileEdit';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -81,6 +82,12 @@ const App: React.FC = () => {
             <Route path="/profile" element={
               <ProtectedRoute>
                 <ProfilePage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/profile/edit" element={
+              <ProtectedRoute>
+                <ProfileEditPage />
               </ProtectedRoute>
             } />
             
