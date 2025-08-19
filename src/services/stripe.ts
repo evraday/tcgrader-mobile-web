@@ -88,6 +88,7 @@ class StripeService {
   getPriceIds() {
     return {
       [SubscriptionType.BASIC]: process.env.STRIPE_BASIC_PRICE_ID || '',
+      [SubscriptionType.COLLECTOR]: process.env.STRIPE_COLLECTOR_PRICE_ID || '',
       [SubscriptionType.PRO]: process.env.STRIPE_PRO_PRICE_ID || '',
       [SubscriptionType.BUSINESS]: process.env.STRIPE_BUSINESS_PRICE_ID || '',
     };

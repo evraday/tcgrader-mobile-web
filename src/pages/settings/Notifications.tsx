@@ -294,7 +294,7 @@ const NotificationsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-md mx-auto px-5 py-6 pb-8 pt-20">
+      <div className="max-w-md mx-auto px-5 py-6 pb-24 pt-20">
         <div className="mb-6">
           <p className="text-gray-600">
             Choose which notifications you'd like to receive

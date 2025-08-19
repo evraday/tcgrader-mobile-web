@@ -81,6 +81,15 @@ class ApiService {
     return response.data;
   }
 
+  async uploadAvatar(file: Blob) {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const response = await this.api.post('/api/user/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  }
+
   async updateNotificationSettings(settings: any) {
     const response = await this.api.patch('/api/user/settings/notifications', settings);
     return response.data;
@@ -128,8 +137,8 @@ class ApiService {
     return response.data;
   }
 
-  async updateCollection(id: string, data: Partial<{ name: string; description?: string; isPublic: boolean }>) {
-    const response = await this.api.patch(`/api/collections/${id}`, data);
+  async updateCollection(id: string, data: Partial<{ name: string; description?: string; isPublic: boolean; coverImage?: string }>) {
+    const response = await this.api.put(`/api/collections/${id}`, data);
     return response.data;
   }
 
@@ -176,9 +185,67 @@ class ApiService {
     return response.data;
   }
 
+  async getUncollectedCards() {
+    const response = await this.api.get('/api/cards/uncollected');
+    return response.data;
+  }
+
   // Marketplace endpoints
   async getMyListings() {
     const response = await this.api.get('/api/marketplace/me');
+    return response.data;
+  }
+
+  async getMarketInsights(timeframe: string = '30d') {
+    const response = await this.api.get('/api/marketplace/analytics/market-insights', { 
+      params: { timeframe } 
+    });
+    return response.data;
+  }
+
+  async getComprehensiveStats() {
+    const response = await this.api.get('/api/marketplace/analytics/comprehensive-stats');
+    return response.data;
+  }
+
+  async getRecentActivity() {
+    try {
+      const response = await this.api.get('/api/activity/recent');
+      return response.data;
+    } catch (error) {
+      // Return mock data for development
+      return {
+        activity: [
+          {
+            id: '1',
+            type: 'grade',
+            title: 'Grade Received',
+            description: 'Charizard VMAX received PSA 10',
+            createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: '2',
+            type: 'collection',
+            title: 'Card Added',
+            description: 'Added Pikachu to Japanese Collection',
+            createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: '3',
+            type: 'price_alert',
+            title: 'Price Alert',
+            description: 'Black Lotus increased by 15%',
+            createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+          }
+        ]
+      };
+    }
+  }
+
+  async getTopPerformers(limit: number = 10, timeframe: string = '30d') {
+    const response = await this.api.get('/api/marketplace/analytics/top-performers', { 
+      params: { limit, timeframe } 
+    });
     return response.data;
   }
 
@@ -202,6 +269,45 @@ class ApiService {
 
   async updateGradeStatus(id: string, status: string, data?: any) {
     const response = await this.api.patch(`/api/grades/${id}/status`, { status, ...data });
+    return response.data;
+  }
+
+  // Bulk grading queue endpoints
+  async createBulkGradingQueue(cards: { front: string; back: string }[]) {
+    const response = await this.api.post('/api/grading/queue/bulk', { 
+      cards,
+      mode: 'bulk'
+    });
+    return response.data;
+  }
+
+  async getGradingQueue(queueId: string) {
+    const response = await this.api.get(`/api/grading/queue/${queueId}`);
+    return response.data;
+  }
+
+  async submitGradingQueue(queueId: string) {
+    const response = await this.api.post(`/api/grading/queue/${queueId}/submit`);
+    return response.data;
+  }
+
+  async cancelGradingQueue(queueId: string) {
+    const response = await this.api.delete(`/api/grading/queue/${queueId}`);
+    return response.data;
+  }
+
+  async addToGradingQueue(queueId: string, card: { front: string; back: string }) {
+    const response = await this.api.post(`/api/grading/queue/${queueId}/cards`, card);
+    return response.data;
+  }
+
+  async removeFromGradingQueue(queueId: string, cardId: string) {
+    const response = await this.api.delete(`/api/grading/queue/${queueId}/cards/${cardId}`);
+    return response.data;
+  }
+
+  async getGradingQueueStatus(queueId: string) {
+    const response = await this.api.get(`/api/grading/queue/${queueId}/status`);
     return response.data;
   }
 

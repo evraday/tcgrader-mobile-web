@@ -251,7 +251,7 @@ const HelpCenterPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-md mx-auto px-5 py-6 pb-8 pt-20">
+      <div className="max-w-md mx-auto px-5 py-6 pb-24 pt-20">
         {selectedArticle ? (
           // Article View
           <div className="animate-in slide-in-from-right">

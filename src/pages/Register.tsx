@@ -77,21 +77,21 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center bg-transparent">
       <div className="max-w-md w-full mx-auto px-5 py-8">
         <div className="text-center mb-8">
           <img src={tcgraderLogo} alt="TCGrader" className="h-20 w-auto mx-auto mb-6 float-animation" />
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-200 mb-2">
             Create Account
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400">
             Start managing your collection today
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
             <Input
               type="text"
               name="name"
@@ -101,12 +101,12 @@ const RegisterPage: React.FC = () => {
               error={errors.name}
               required
               autoComplete="name"
-              className="w-full px-4 py-3 bg-white rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all"
+              className="w-full px-4 py-3 bg-white dark:bg-slate-800/70 rounded-xl border border-gray-200 dark:border-slate-700/40 focus:border-primary-500 dark:focus:border-primary-400 focus:ring-4 focus:ring-primary-500/10 transition-all text-gray-900 dark:text-gray-200"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
             <Input
               type="email"
               name="email"
@@ -116,12 +116,12 @@ const RegisterPage: React.FC = () => {
               error={errors.email}
               required
               autoComplete="email"
-              className="w-full px-4 py-3 bg-white rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all"
+              className="w-full px-4 py-3 bg-white dark:bg-slate-800/70 rounded-xl border border-gray-200 dark:border-slate-700/40 focus:border-primary-500 dark:focus:border-primary-400 focus:ring-4 focus:ring-primary-500/10 transition-all text-gray-900 dark:text-gray-200"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password</label>
             <Input
               type="password"
               name="password"
@@ -131,12 +131,12 @@ const RegisterPage: React.FC = () => {
               error={errors.password}
               required
               autoComplete="new-password"
-              className="w-full px-4 py-3 bg-white rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all"
+              className="w-full px-4 py-3 bg-white dark:bg-slate-800/70 rounded-xl border border-gray-200 dark:border-slate-700/40 focus:border-primary-500 dark:focus:border-primary-400 focus:ring-4 focus:ring-primary-500/10 transition-all text-gray-900 dark:text-gray-200"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm Password</label>
             <Input
               type="password"
               name="confirmPassword"
@@ -146,7 +146,7 @@ const RegisterPage: React.FC = () => {
               error={errors.confirmPassword}
               required
               autoComplete="new-password"
-              className="w-full px-4 py-3 bg-white rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all"
+              className="w-full px-4 py-3 bg-white dark:bg-slate-800/70 rounded-xl border border-gray-200 dark:border-slate-700/40 focus:border-primary-500 dark:focus:border-primary-400 focus:ring-4 focus:ring-primary-500/10 transition-all text-gray-900 dark:text-gray-200"
             />
           </div>
 
@@ -157,7 +157,7 @@ const RegisterPage: React.FC = () => {
                 className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mt-1"
                 required
               />
-              <span className="ml-2 text-sm text-gray-600">
+              <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
                 I agree to the{' '}
                 <Link to="/terms" className="text-primary-600 hover:text-primary-700 font-medium">
                   Terms of Service
@@ -175,13 +175,13 @@ const RegisterPage: React.FC = () => {
           </div>
 
           <div className="bg-gradient-to-br from-primary-50 to-blue-50 rounded-2xl p-5 border border-primary-100">
-            <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+            <h3 className="font-semibold text-gray-900 dark:text-gray-200 mb-3 flex items-center">
               <svg className="w-5 h-5 text-primary-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
               </svg>
               Free Plan Includes:
             </h3>
-            <ul className="space-y-2 text-sm text-gray-700">
+            <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
               <li className="flex items-start">
                 <svg className="w-4 h-4 text-success-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -209,7 +209,7 @@ const RegisterPage: React.FC = () => {
             </ul>
           </div>
 
-          <p className="text-center text-sm text-gray-600">
+          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
             Already have an account?{' '}
             <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">
               Sign in

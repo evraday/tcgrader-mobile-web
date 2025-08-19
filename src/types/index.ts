@@ -105,6 +105,7 @@ export interface Subscription {
 export enum SubscriptionType {
   FREE = 'free',
   BASIC = 'basic',
+  COLLECTOR = 'collector',
   PRO = 'pro',
   BUSINESS = 'business'
 }
@@ -172,6 +173,7 @@ export interface CardPrices {
 
 export interface Collection {
   id: string;
+  _id?: string; // MongoDB ID - API uses _id
   userId: string;
   name: string;
   description?: string;

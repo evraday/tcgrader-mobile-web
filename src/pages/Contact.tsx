@@ -172,7 +172,7 @@ const ContactPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-md mx-auto px-5 py-6 pb-8 pt-20">
+      <div className="max-w-md mx-auto px-5 py-6 pb-24 pt-20">
         {/* Quick Contact Options */}
         <div className="bg-gradient-to-br from-primary-50 to-blue-50 rounded-2xl p-5 mb-6 border border-primary-100">
           <h3 className="font-semibold text-gray-900 mb-3">Need Quick Help?</h3>
