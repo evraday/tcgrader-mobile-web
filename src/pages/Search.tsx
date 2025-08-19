@@ -6,6 +6,7 @@ import CardItem from '../components/cards/CardItem';
 import CardScanner from '../components/cards/CardScanner';
 import { Card, CardRarity } from '../types';
 import { RARITY_COLORS, CONDITION_NAMES } from '../constants';
+import apiService from '../services/api';
 
 const SearchPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -24,18 +25,15 @@ const SearchPage: React.FC = () => {
       }
 
       setIsLoading(true);
+      setError(null);
       try {
-        // TODO: Implement actual API search
-        // const response = await apiService.searchCards(query);
-        // setResults(response.data);
-        
-        // Mock results for now
-        setTimeout(() => {
-          setResults([]);
-          setIsLoading(false);
-        }, 1000);
+        const response = await apiService.searchCards(query);
+        setResults(response.data || response);
+        setIsLoading(false);
       } catch (error) {
         console.error('Search failed:', error);
+        setError('Failed to search cards. Please try again.');
+        setResults([]);
         setIsLoading(false);
       }
     }, 500),
@@ -166,7 +164,6 @@ const SearchPage: React.FC = () => {
           </div>
         </div>
       </details>
-        )}
 
       {/* Results */}
       {isLoading ? (
