@@ -15,6 +15,13 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionType, SubscriptionLimits> =
     bulkOperations: false,
     apiAccess: false
   },
+  [SubscriptionType.COLLECTOR]: {
+    gradesPerMonth: 50,
+    collectionsAllowed: -1, // unlimited
+    priceTrackingInterval: 'realtime',
+    bulkOperations: true,
+    apiAccess: false
+  },
   [SubscriptionType.PRO]: {
     gradesPerMonth: 100,
     collectionsAllowed: -1, // unlimited
@@ -34,6 +41,7 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionType, SubscriptionLimits> =
 export const SUBSCRIPTION_PRICES = {
   [SubscriptionType.FREE]: 0,
   [SubscriptionType.BASIC]: 4.99,
+  [SubscriptionType.COLLECTOR]: 12.99,
   [SubscriptionType.PRO]: 9.99,
   [SubscriptionType.BUSINESS]: 29.99
 };

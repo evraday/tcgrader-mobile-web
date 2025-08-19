@@ -23,7 +23,7 @@ const Button: React.FC<ButtonProps> = ({
     primary: 'btn-primary',
     secondary: 'btn-secondary',
     danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800',
-    ghost: 'bg-transparent text-gray-700 hover:bg-gray-100',
+    ghost: 'bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800/50',
     accent: 'btn-accent'
   };
 

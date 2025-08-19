@@ -35,9 +35,16 @@ interface UIState {
   isLoading: boolean;
   error: string | null;
   theme: 'light' | 'dark' | 'system';
+  backgroundImage: string | null;
+  backgroundType: 'upload' | 'card' | null;
+  backgroundPosition: { x: number; y: number };
+  backgroundScale: number;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
+  setBackgroundImage: (image: string | null, type: 'upload' | 'card' | null) => void;
+  setBackgroundPosition: (position: { x: number; y: number }) => void;
+  setBackgroundScale: (scale: number) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -109,14 +116,27 @@ export const useUIStore = create<UIState>()(
       isLoading: false,
       error: null,
       theme: 'system',
+      backgroundImage: null,
+      backgroundType: null,
+      backgroundPosition: { x: 50, y: 50 },
+      backgroundScale: 1,
       setLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
-      setTheme: (theme) => set({ theme })
+      setTheme: (theme) => set({ theme }),
+      setBackgroundImage: (backgroundImage, backgroundType) => set({ backgroundImage, backgroundType }),
+      setBackgroundPosition: (backgroundPosition) => set({ backgroundPosition }),
+      setBackgroundScale: (backgroundScale) => set({ backgroundScale })
     }),
     {
       name: 'ui-storage',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ theme: state.theme })
+      partialize: (state) => ({ 
+        theme: state.theme,
+        backgroundImage: state.backgroundImage,
+        backgroundType: state.backgroundType,
+        backgroundPosition: state.backgroundPosition,
+        backgroundScale: state.backgroundScale
+      })
     }
   )
 );

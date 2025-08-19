@@ -53,14 +53,14 @@ const LoginPage: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center bg-transparent">
       <div className="max-w-md w-full mx-auto px-5">
         <div className="text-center mb-8">
           <img src={tcgraderLogo} alt="TCGrader" className="h-20 w-auto mx-auto mb-6 float-animation" />
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-200 mb-2">
             Welcome Back
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400">
             Sign in to your TCGrader account
           </p>
         </div>
@@ -68,13 +68,13 @@ const LoginPage: React.FC = () => {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
-            <div className="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm border border-red-200">
+            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl text-sm border border-red-200 dark:border-red-700/30">
               {error}
             </div>
           )}
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
             <Input
               type="email"
               name="email"
@@ -83,12 +83,12 @@ const LoginPage: React.FC = () => {
               onChange={handleChange}
               required
               autoComplete="email"
-              className="w-full px-4 py-3 bg-white rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all"
+              className="w-full px-4 py-3 bg-white dark:bg-slate-800/70 rounded-xl border border-gray-200 dark:border-slate-700/40 focus:border-primary-500 dark:focus:border-primary-400 focus:ring-4 focus:ring-primary-500/10 transition-all text-gray-900 dark:text-gray-200"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password</label>
             <Input
               type="password"
               name="password"
@@ -97,7 +97,7 @@ const LoginPage: React.FC = () => {
               onChange={handleChange}
               required
               autoComplete="current-password"
-              className="w-full px-4 py-3 bg-white rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all"
+              className="w-full px-4 py-3 bg-white dark:bg-slate-800/70 rounded-xl border border-gray-200 dark:border-slate-700/40 focus:border-primary-500 dark:focus:border-primary-400 focus:ring-4 focus:ring-primary-500/10 transition-all text-gray-900 dark:text-gray-200"
             />
           </div>
 
@@ -107,13 +107,13 @@ const LoginPage: React.FC = () => {
                 type="checkbox"
                 className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
               />
-              <span className="ml-2 text-sm text-gray-600">
+              <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
                 Remember me
               </span>
             </label>
             <Link
               to="/forgot-password"
-              className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+              className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
             >
               Forgot password?
             </Link>
@@ -125,10 +125,10 @@ const LoginPage: React.FC = () => {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
+              <div className="w-full border-t border-gray-200 dark:border-slate-700/40"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-background text-gray-500">
+              <span className="px-4 bg-transparent text-gray-500 dark:text-gray-400">
                 Or continue with
               </span>
             </div>
@@ -137,7 +137,7 @@ const LoginPage: React.FC = () => {
           <div className="grid grid-cols-3 gap-3">
             <button
               type="button"
-              className="flex items-center justify-center py-3 px-4 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all"
+              className="flex items-center justify-center py-3 px-4 bg-white dark:bg-slate-800/70 rounded-xl border border-gray-200 dark:border-slate-700/40 hover:bg-gray-50 dark:hover:bg-slate-700/70 hover:border-gray-300 dark:hover:border-slate-600/40 transition-all"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
                 <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" fill="#000"/>
@@ -145,7 +145,7 @@ const LoginPage: React.FC = () => {
             </button>
             <button
               type="button"
-              className="flex items-center justify-center py-3 px-4 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all"
+              className="flex items-center justify-center py-3 px-4 bg-white dark:bg-slate-800/70 rounded-xl border border-gray-200 dark:border-slate-700/40 hover:bg-gray-50 dark:hover:bg-slate-700/70 hover:border-gray-300 dark:hover:border-slate-600/40 transition-all"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
                 <path d="M21.8055 10.0415H21V10H12V14H17.6515C16.827 16.3285 14.6115 18 12 18C8.6865 18 6 15.3135 6 12C6 8.6865 8.6865 6 12 6C13.5295 6 14.921 6.577 15.9805 7.5195L18.809 4.691C17.023 3.0265 14.634 2 12 2C6.4775 2 2 6.4775 2 12C2 17.5225 6.4775 22 12 22C17.5225 22 22 17.5225 22 12C22 11.3295 21.931 10.675 21.8055 10.0415Z" fill="#FFC107"/>
@@ -156,7 +156,7 @@ const LoginPage: React.FC = () => {
             </button>
             <button
               type="button"
-              className="flex items-center justify-center py-3 px-4 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all"
+              className="flex items-center justify-center py-3 px-4 bg-white dark:bg-slate-800/70 rounded-xl border border-gray-200 dark:border-slate-700/40 hover:bg-gray-50 dark:hover:bg-slate-700/70 hover:border-gray-300 dark:hover:border-slate-600/40 transition-all"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#1877F2">
                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -164,22 +164,22 @@ const LoginPage: React.FC = () => {
             </button>
           </div>
 
-          <p className="text-center text-sm text-gray-600 mt-6">
+          <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-6">
             Don't have an account?{' '}
-            <Link to="/register" className="text-primary-600 hover:text-primary-700 font-medium">
+            <Link to="/register" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
               Sign up free
             </Link>
           </p>
 
           {RECAPTCHA_SITE_KEY && (
             <div className="text-center mt-4">
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 This site is protected by reCAPTCHA and the Google{' '}
-                <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
+                <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary-600 dark:text-primary-400 hover:underline">
                   Privacy Policy
                 </a>{' '}
                 and{' '}
-                <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
+                <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="text-primary-600 dark:text-primary-400 hover:underline">
                   Terms of Service
                 </a>{' '}
                 apply.
