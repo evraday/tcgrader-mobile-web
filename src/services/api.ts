@@ -99,6 +99,21 @@ class ApiService {
     return response.data;
   }
 
+  async updatePrivacySettings(settings: any) {
+    const response = await this.api.patch('/api/user/settings/privacy', settings);
+    return response.data;
+  }
+
+  async requestDataExport() {
+    const response = await this.api.post('/api/user/data-export');
+    return response.data;
+  }
+
+  async deleteAccount(password: string) {
+    const response = await this.api.delete('/api/user/account', { data: { password } });
+    return response.data;
+  }
+
   // Subscription endpoints
   async getSubscription() {
     const response = await this.api.get('/api/subscription');
