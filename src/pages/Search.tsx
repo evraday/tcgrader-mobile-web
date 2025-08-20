@@ -211,7 +211,6 @@ const SearchPage: React.FC = () => {
           </div>
         </details>
       )}
-
       {/* Results */}
       {isLoading ? (
         <div className="text-center py-8">
