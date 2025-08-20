@@ -6,7 +6,6 @@ import { SUBSCRIPTION_LIMITS, GRADING_SERVICE_NAMES } from '../constants';
 import cameraService from '../services/camera';
 import apiService from '../services/api';
 import Button from '../components/common/Button';
-import Input from '../components/common/Input';
 import CardScanner from '../components/cards/CardScanner';
 
 const GradeSubmitPage: React.FC = () => {
@@ -56,47 +55,83 @@ const GradeSubmitPage: React.FC = () => {
   const handlePhotosCapture = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       const gradingPhotos = await cameraService.captureGradingPhotos();
+      
+      if (!gradingPhotos || !gradingPhotos.front || !gradingPhotos.back) {
+        throw new Error('Failed to capture required photos');
+      }
+      
       setImages(gradingPhotos);
       setStep('review');
     } catch (error: any) {
-      setError(error.message);
+      console.error('Photo capture error:', error);
+      setError(error.message || 'Failed to capture photos. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSubmit = async () => {
-    if (!selectedCard || !gradingService || !images) return;
+    if (!selectedCard || !gradingService || !images) {
+      setError('Please complete all steps before submitting');
+      return;
+    }
+
+    if (!images.front || !images.back) {
+      setError('Front and back photos are required');
+      return;
+    }
 
     try {
       setIsLoading(true);
+      setError(null);
       
       // Create form data
       const formData = new FormData();
       formData.append('cardId', selectedCard.id);
+      formData.append('cardName', selectedCard.name);
+      formData.append('cardSet', selectedCard.setName);
+      formData.append('cardNumber', selectedCard.number);
       formData.append('service', gradingService);
       
+      // Convert base64 images to blobs
+      const base64ToBlob = (base64: string): Blob => {
+        const byteString = atob(base64.split(',')[1]);
+        const mimeString = base64.split(',')[0].split(':')[1].split(';')[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        return new Blob([ab], { type: mimeString });
+      };
+
       // Add images
-      const frontBlob = await fetch(images.front).then(r => r.blob());
-      const backBlob = await fetch(images.back).then(r => r.blob());
+      const frontBlob = base64ToBlob(images.front);
+      const backBlob = base64ToBlob(images.back);
       
       formData.append('frontImage', frontBlob, 'front.jpg');
       formData.append('backImage', backBlob, 'back.jpg');
 
-      if (images.angles) {
+      if (images.angles && images.angles.length > 0) {
         for (let i = 0; i < images.angles.length; i++) {
-          const angleBlob = await fetch(images.angles[i]).then(r => r.blob());
+          const angleBlob = base64ToBlob(images.angles[i]);
           formData.append(`angleImage${i}`, angleBlob, `angle${i}.jpg`);
         }
       }
 
       const grade = await apiService.createGradeSubmission(formData);
-      addGrade(grade);
       
-      navigate('/grades');
+      if (grade && grade.id) {
+        addGrade(grade);
+        navigate('/grades');
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (error: any) {
-      setError(error.message || 'Failed to submit for grading');
+      console.error('Grade submission error:', error);
+      setError(error.response?.data?.message || error.message || 'Failed to submit for grading');
     } finally {
       setIsLoading(false);
     }

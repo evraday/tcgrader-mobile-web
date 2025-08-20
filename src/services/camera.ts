@@ -40,6 +40,12 @@ class CameraService {
   }
 
   async selectFromGallery(): Promise<string> {
+    // Check permissions first
+    const hasPermission = await this.checkPermissions();
+    if (!hasPermission) {
+      throw new Error('Gallery permission denied');
+    }
+
     const imageOptions: ImageOptions = {
       quality: 90,
       resultType: CameraResultType.Uri,
@@ -50,13 +56,16 @@ class CameraService {
       const photo = await Camera.getPhoto(imageOptions);
       
       if (!photo.webPath) {
-        throw new Error('Failed to select image');
+        throw new Error('No image selected');
       }
 
       const base64Data = await this.readAsBase64(photo.webPath);
       return base64Data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Gallery selection failed:', error);
+      if (error.message?.includes('User cancelled')) {
+        throw new Error('Image selection cancelled');
+      }
       throw error;
     }
   }
@@ -85,41 +94,61 @@ class CameraService {
     back: string;
     angles?: string[];
   }> {
-    const result: any = {};
+    try {
+      // Check permissions first
+      const hasPermissions = await this.checkPermissions();
+      if (!hasPermissions) {
+        throw new Error('Camera permissions are required to capture grading photos');
+      }
 
-    // Capture front
-    alert('Please capture the FRONT of the card');
-    result.front = await this.captureCardImage({ quality: 95 });
+      const result: any = {};
 
-    // Capture back
-    alert('Please capture the BACK of the card');
-    result.back = await this.captureCardImage({ quality: 95 });
+      // Capture front
+      alert('Please capture the FRONT of the card');
+      result.front = await this.captureCardImage({ quality: 95 });
 
-    // Ask for additional angles
-    const wantsAngles = confirm('Would you like to capture additional angles for better grading assessment?');
-    if (wantsAngles) {
-      result.angles = await this.captureMultipleAngles();
+      // Capture back
+      alert('Please capture the BACK of the card');
+      result.back = await this.captureCardImage({ quality: 95 });
+
+      // Ask for additional angles
+      const wantsAngles = confirm('Would you like to capture additional angles for better grading assessment?');
+      if (wantsAngles) {
+        result.angles = await this.captureMultipleAngles();
+      }
+
+      return result;
+    } catch (error: any) {
+      console.error('Failed to capture grading photos:', error);
+      throw new Error(error.message || 'Failed to capture grading photos');
     }
-
-    return result;
   }
 
   private async readAsBase64(webPath: string): Promise<string> {
-    const response = await fetch(webPath);
-    const blob = await response.blob();
-    
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          resolve(reader.result);
-        } else {
-          reject(new Error('Failed to convert to base64'));
-        }
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+    try {
+      const response = await fetch(webPath);
+      if (!response.ok) {
+        throw new Error('Failed to fetch image');
+      }
+      
+      const blob = await response.blob();
+      
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            resolve(reader.result);
+          } else {
+            reject(new Error('Failed to convert image to base64'));
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read image file'));
+        reader.readAsDataURL(blob);
+      });
+    } catch (error: any) {
+      console.error('Failed to read image as base64:', error);
+      throw new Error('Failed to process selected image');
+    }
   }
 
   private async saveImage(fileName: string, base64Data: string): Promise<void> {
