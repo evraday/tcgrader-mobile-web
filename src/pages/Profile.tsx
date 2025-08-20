@@ -198,7 +198,7 @@ const ProfilePage: React.FC = () => {
 
         {/* Account Stats */}
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm">
+          <Link to="/collection" className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
             <div className="flex items-center justify-between mb-2">
               <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -214,9 +214,9 @@ const ProfilePage: React.FC = () => {
             {cardStats.avgGrade > 0 && (
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Avg: {cardStats.avgGrade}</p>
             )}
-          </div>
+          </Link>
           
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm">
+          <Link to="/market" className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
             <div className="flex items-center justify-between mb-2">
               <svg className="w-6 h-6 text-accent-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -229,7 +229,7 @@ const ProfilePage: React.FC = () => {
               {isLoading ? '...' : cardStats.marketplaceListings.toLocaleString()}
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-400">Marketplace Listings</p>
-          </div>
+          </Link>
         </div>
 
         {/* Subscription Card */}
