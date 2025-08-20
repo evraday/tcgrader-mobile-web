@@ -31,9 +31,9 @@ const CardScanner: React.FC<CardScannerProps> = ({ onCardScanned, onError }) => 
 
       setScannedImage(imageData);
 
-      // Convert base64 to blob for API
-      const response = await fetch(imageData);
-      const blob = await response.blob();
+      // Convert base64 to blob
+      const base64Response = await fetch(imageData);
+      const blob = await base64Response.blob();
 
       // Send to API for recognition
       const scanResult = await apiService.scanCard(blob);
@@ -58,9 +58,11 @@ const CardScanner: React.FC<CardScannerProps> = ({ onCardScanned, onError }) => 
       const imageData = await cameraService.selectFromGallery();
       setScannedImage(imageData);
 
-      // Convert and scan
-      const response = await fetch(imageData);
-      const blob = await response.blob();
+      // Convert base64 to blob
+      const base64Response = await fetch(imageData);
+      const blob = await base64Response.blob();
+      
+      // Send to API for recognition
       const scanResult = await apiService.scanCard(blob);
       
       if (scanResult.card) {
@@ -70,7 +72,7 @@ const CardScanner: React.FC<CardScannerProps> = ({ onCardScanned, onError }) => 
       }
     } catch (error: any) {
       console.error('Gallery selection failed:', error);
-      onError(error.message || 'Failed to select image');
+      onError(error.message || 'Failed to select image from gallery');
     } finally {
       setIsScanning(false);
     }
