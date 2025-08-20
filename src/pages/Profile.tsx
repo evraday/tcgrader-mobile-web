@@ -99,7 +99,7 @@ const ProfilePage: React.FC = () => {
 
   if (!user) return null;
 
-  const limits = SUBSCRIPTION_LIMITS[user.subscription?.type === 'merchant' ? SubscriptionType.BUSINESS : (user.subscription?.type as SubscriptionType) || SubscriptionType.FREE];
+  const limits = SUBSCRIPTION_LIMITS[user.subscription?.type || 'free'];
 
   return (
     <div className="min-h-screen dark:bg-gray-900">
