@@ -213,6 +213,12 @@ class ApiService {
     return response.data;
   }
 
+  // Market endpoints
+  async getTopPerformers(period: 'day' | 'week' | 'month' = 'month') {
+    const response = await this.api.get('/api/market/top-performers', { params: { period } });
+    return response.data;
+  }
+
   // Price alert endpoints
   async getPriceAlerts() {
     const response = await this.api.get('/api/alerts');

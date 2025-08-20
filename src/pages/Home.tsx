@@ -14,6 +14,8 @@ const HomePage: React.FC = () => {
     avgGrade: 0,
     isLoading: true
   });
+  const [topPerformers, setTopPerformers] = useState<any[]>([]);
+  const [topPerformersLoading, setTopPerformersLoading] = useState(true);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -24,6 +26,7 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated && user) {
       fetchPortfolioData();
+      fetchTopPerformers();
     }
   }, [isAuthenticated, user]);
 
@@ -49,6 +52,48 @@ const HomePage: React.FC = () => {
     } catch (error) {
       console.error('Failed to fetch portfolio data:', error);
       setPortfolioStats(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  const fetchTopPerformers = async () => {
+    try {
+      setTopPerformersLoading(true);
+      const response = await apiService.getTopPerformers('month');
+      setTopPerformers(response.performers || []);
+    } catch (error) {
+      console.error('Failed to fetch top performers:', error);
+      // Fallback data if API fails
+      setTopPerformers([
+        {
+          id: '1',
+          name: 'Pikachu Illustrator',
+          grade: 'PSA 9',
+          value: 375000,
+          change: 45.2,
+          image: '/api/placeholder/60/60',
+          game: 'pokemon'
+        },
+        {
+          id: '2',
+          name: 'Black Lotus (Alpha)',
+          grade: 'BGS 9.5',
+          value: 45000,
+          change: 22.8,
+          image: '/api/placeholder/60/60',
+          game: 'magic'
+        },
+        {
+          id: '3',
+          name: 'Michael Jordan Rookie',
+          grade: 'PSA 10',
+          value: 12500,
+          change: 15.3,
+          image: '/api/placeholder/60/60',
+          game: 'sports'
+        }
+      ]);
+    } finally {
+      setTopPerformersLoading(false);
     }
   };
 
@@ -283,48 +328,73 @@ const HomePage: React.FC = () => {
             </div>
             
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg"></div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Pikachu Illustrator</p>
-                    <p className="text-xs text-gray-500">PSA 9</p>
-                  </div>
+              {topPerformersLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-gray-900">$375,000</p>
-                  <p className="text-xs text-success-600 font-medium">+45.2%</p>
+              ) : topPerformers.length > 0 ? (
+                topPerformers.slice(0, 3).map((performer) => (
+                  <Link 
+                    key={performer.id} 
+                    to={`/cards/${performer.id}`}
+                    className="flex items-center justify-between hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                        {performer.image ? (
+                          <img 
+                            src={performer.image.startsWith('http') ? performer.image : `https://www.tcgrader.com${performer.image}`}
+                            alt={performer.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = '/api/placeholder/60/60';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{performer.name}</p>
+                        <p className="text-xs text-gray-500">{performer.grade}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-gray-900">
+                        ${performer.value?.toLocaleString() || '0'}
+                      </p>
+                      <p className={`text-xs font-medium ${
+                        performer.change > 0 ? 'text-success-600' : 'text-red-600'
+                      }`}>
+                        {performer.change > 0 ? '+' : ''}{performer.change}%
+                      </p>
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-sm text-gray-500">No top performers data available</p>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg"></div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Black Lotus (Alpha)</p>
-                    <p className="text-xs text-gray-500">BGS 9.5</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-gray-900">$45,000</p>
-                  <p className="text-xs text-success-600 font-medium">+22.8%</p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg"></div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Michael Jordan Rookie</p>
-                    <p className="text-xs text-gray-500">PSA 10</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-gray-900">$12,500</p>
-                  <p className="text-xs text-success-600 font-medium">+15.3%</p>
-                </div>
-              </div>
+              )}
             </div>
+            
+            {topPerformers.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <Link 
+                  to="/market/top-performers" 
+                  className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center justify-center"
+                >
+                  View All Top Performers
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Premium CTA for Free Users */}
