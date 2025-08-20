@@ -37,6 +37,8 @@ const CollectionPage: React.FC = () => {
       setCollections(response);
     } catch (error) {
       console.error('Failed to fetch collections:', error);
+      // Set empty array if API fails to prevent blank screen
+      setCollections([]);
     } finally {
       setIsLoading(false);
     }
@@ -126,7 +128,7 @@ const CollectionPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-md mx-auto px-5 py-6 pb-8 pt-24">
+      <div className="max-w-md mx-auto px-5 py-6 pb-24 pt-24">
         <header className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">My Collections</h1>
           <p className="text-gray-600">
