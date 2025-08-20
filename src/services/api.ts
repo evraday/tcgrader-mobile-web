@@ -33,6 +33,14 @@ class ApiService {
           // Token expired or invalid
           useAuthStore.getState().logout();
         }
+        
+        // Enhance error message
+        const errorMessage = error.response?.data?.message || 
+                           error.response?.data?.error || 
+                           error.message || 
+                           'An unexpected error occurred';
+        
+        error.message = errorMessage;
         return Promise.reject(error);
       }
     );

@@ -85,23 +85,34 @@ class CameraService {
     back: string;
     angles?: string[];
   }> {
-    const result: any = {};
+    try {
+      // Check permissions first
+      const hasPermissions = await this.checkPermissions();
+      if (!hasPermissions) {
+        throw new Error('Camera permissions are required to capture grading photos');
+      }
 
-    // Capture front
-    alert('Please capture the FRONT of the card');
-    result.front = await this.captureCardImage({ quality: 95 });
+      const result: any = {};
 
-    // Capture back
-    alert('Please capture the BACK of the card');
-    result.back = await this.captureCardImage({ quality: 95 });
+      // Capture front
+      alert('Please capture the FRONT of the card');
+      result.front = await this.captureCardImage({ quality: 95 });
 
-    // Ask for additional angles
-    const wantsAngles = confirm('Would you like to capture additional angles for better grading assessment?');
-    if (wantsAngles) {
-      result.angles = await this.captureMultipleAngles();
+      // Capture back
+      alert('Please capture the BACK of the card');
+      result.back = await this.captureCardImage({ quality: 95 });
+
+      // Ask for additional angles
+      const wantsAngles = confirm('Would you like to capture additional angles for better grading assessment?');
+      if (wantsAngles) {
+        result.angles = await this.captureMultipleAngles();
+      }
+
+      return result;
+    } catch (error: any) {
+      console.error('Failed to capture grading photos:', error);
+      throw new Error(error.message || 'Failed to capture grading photos');
     }
-
-    return result;
   }
 
   private async readAsBase64(webPath: string): Promise<string> {
