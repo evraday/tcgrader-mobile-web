@@ -4,6 +4,7 @@ import { useAuthStore } from '../store';
 import Button from '../components/common/Button';
 import tcgraderLogo from '../assets/tcgrader-logo.png';
 import apiService from '../services/api';
+import NotificationBell from '../components/notifications/NotificationBell';
 
 const HomePage: React.FC = () => {
   const { isAuthenticated, user } = useAuthStore();
@@ -106,27 +107,30 @@ const HomePage: React.FC = () => {
             <div className="max-w-md mx-auto px-5 py-3">
               <div className="flex items-center justify-between">
                 <img src={tcgraderLogo} alt="TCGrader" className="h-10 w-auto" />
-                <Link to="/profile">
-                  <div className="flex items-center space-x-3 bg-gray-50 rounded-full pl-3 pr-1 py-1 hover:bg-gray-100 transition-all">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">{user?.username || user?.name?.split(' ')[0]}</p>
-                      <p className="text-xs text-gray-500 capitalize">{user?.subscription?.type || 'Free'} Plan</p>
-                    </div>
-                    {user?.avatar ? (
-                      <img 
-                        src={`https://www.tcgrader.com${user.avatar}`} 
-                        alt={user.name} 
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-bold text-gray-700">
-                          {user?.username?.charAt(0) || user?.name?.charAt(0)}
-                        </span>
+                <div className="flex items-center space-x-2">
+                  <NotificationBell />
+                  <Link to="/profile">
+                    <div className="flex items-center space-x-3 bg-gray-50 rounded-full pl-3 pr-1 py-1 hover:bg-gray-100 transition-all">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">{user?.username || user?.name?.split(' ')[0]}</p>
+                        <p className="text-xs text-gray-500 capitalize">{user?.subscription?.type || 'Free'} Plan</p>
                       </div>
-                    )}
-                  </div>
-                </Link>
+                      {user?.avatar ? (
+                        <img 
+                          src={`https://www.tcgrader.com${user.avatar}`} 
+                          alt={user.name} 
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-bold text-gray-700">
+                            {user?.username?.charAt(0) || user?.name?.charAt(0)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
