@@ -94,6 +94,26 @@ class ApiService {
     return response.data;
   }
 
+  async getNotifications() {
+    const response = await this.api.get('/api/notifications');
+    return response.data;
+  }
+
+  async markNotificationAsRead(notificationId: string) {
+    const response = await this.api.patch(`/api/notifications/${notificationId}/read`);
+    return response.data;
+  }
+
+  async markAllNotificationsAsRead() {
+    const response = await this.api.patch('/api/notifications/read-all');
+    return response.data;
+  }
+
+  async deleteNotification(notificationId: string) {
+    const response = await this.api.delete(`/api/notifications/${notificationId}`);
+    return response.data;
+  }
+
   async updateSecuritySettings(settings: any) {
     const response = await this.api.patch('/api/user/settings/security', settings);
     return response.data;
