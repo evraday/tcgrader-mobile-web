@@ -4,6 +4,7 @@ import { useAuthStore } from '../store';
 import Button from '../components/common/Button';
 import tcgraderLogo from '../assets/tcgrader-logo.png';
 import apiService from '../services/api';
+import { SUBSCRIPTION_LIMITS } from '../constants';
 
 const HomePage: React.FC = () => {
   const { isAuthenticated, user } = useAuthStore();
@@ -16,6 +17,10 @@ const HomePage: React.FC = () => {
   });
   const [topPerformers, setTopPerformers] = useState<any[]>([]);
   const [topPerformersLoading, setTopPerformersLoading] = useState(true);
+  
+  // Get subscription limits based on user's subscription type
+  const subscriptionType = user?.subscription?.type || user?.role || 'free';
+  const subscriptionLimits = SUBSCRIPTION_LIMITS[subscriptionType] || SUBSCRIPTION_LIMITS.free;
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -225,13 +230,16 @@ const HomePage: React.FC = () => {
               </Link>
 
               <Link to="/grades" className="group">
-                <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all text-center">
+                <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all text-center relative">
                   <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:bg-gray-200 transition-colors">
                     <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                     </svg>
                   </div>
                   <p className="text-xs font-medium text-gray-700">Grades</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {user?.credits || 0}/{subscriptionLimits.gradesPerMonth === -1 ? '∞' : subscriptionLimits.gradesPerMonth}
+                  </p>
                 </div>
               </Link>
             </div>
