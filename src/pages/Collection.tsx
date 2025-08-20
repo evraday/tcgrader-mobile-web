@@ -101,25 +101,33 @@ const CollectionPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen dark:bg-gray-900">
       {/* Fixed Header */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100 safe-area-top">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 safe-area-top">
         <div className="max-w-md mx-auto px-5 py-3">
           <div className="flex items-center justify-between">
             <Link to="/">
               <img src={tcgraderLogo} alt="TCGrader" className="h-10 w-auto" />
             </Link>
             <Link to="/profile">
-              <div className="flex items-center space-x-3 bg-gray-50 rounded-full pl-3 pr-1 py-1 hover:bg-gray-100 transition-all">
+              <div className="flex items-center space-x-3 bg-gray-50 dark:bg-gray-700 rounded-full pl-3 pr-1 py-1 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all">
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">{user?.name?.split(' ')[0]}</p>
-                  <p className="text-xs text-gray-500">{user?.isPremium ? 'Premium' : 'Free'} Plan</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{user?.username || user?.name?.split(' ')[0]}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{user?.subscription?.type || 'Free'} Plan</p>
                 </div>
-                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-bold text-gray-700">
-                    {user?.name?.charAt(0)}
-                  </span>
-                </div>
+                {user?.avatar ? (
+                  <img 
+                    src={`https://www.tcgrader.com${user.avatar}`} 
+                    alt={user.name} 
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                      {user?.username?.charAt(0) || user?.name?.charAt(0)}
+                    </span>
+                  </div>
+                )}
               </div>
             </Link>
           </div>
@@ -128,22 +136,22 @@ const CollectionPage: React.FC = () => {
 
       <div className="max-w-md mx-auto px-5 py-6 pb-8 pt-24">
         <header className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">My Collections</h1>
-          <p className="text-gray-600">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">My Collections</h1>
+          <p className="text-gray-600 dark:text-gray-400">
             {collections.length} collection{collections.length !== 1 ? 's' : ''} • 
             {' '}{subscriptionLimits?.collectionsAllowed === -1 ? 'Unlimited' : `${collections.length}/${subscriptionLimits?.collectionsAllowed}`} allowed
           </p>
         </header>
 
         {collections.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 shadow-sm text-center">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm text-center">
             <div className="w-20 h-20 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <svg className="w-10 h-10 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold mb-2 text-gray-900">No Collections Yet</h2>
-            <p className="text-gray-600 mb-6 max-w-sm mx-auto">
+            <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">No Collections Yet</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm mx-auto">
               Create your first collection to start organizing your trading cards.
             </p>
             {canCreateCollection ? (
@@ -172,7 +180,7 @@ const CollectionPage: React.FC = () => {
               <Button 
                 fullWidth 
                 onClick={() => setShowCreateModal(true)}
-                className="mb-4 bg-white border-2 border-dashed border-gray-300 hover:border-primary-500 text-gray-700 hover:text-primary-600"
+                className="mb-4 bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 text-gray-700 dark:text-gray-300 hover:text-primary-600"
               >
                 <div className="flex items-center justify-center space-x-2">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -185,14 +193,14 @@ const CollectionPage: React.FC = () => {
 
             {collections.map((collection) => (
               <Link key={collection.id} to={`/collection/${collection.id}`}>
-                <div className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-primary-600 transition-colors">
                         {collection.name}
                       </h3>
                       {collection.description && (
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                           {collection.description}
                         </p>
                       )}
@@ -219,7 +227,7 @@ const CollectionPage: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    <svg className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
@@ -228,14 +236,14 @@ const CollectionPage: React.FC = () => {
             ))}
 
             {!canCreateCollection && collections.length > 0 && (
-              <div className="bg-gradient-to-br from-accent-50 to-pink-50 rounded-2xl p-6 text-center border border-accent-100">
+              <div className="bg-gradient-to-br from-accent-50 to-pink-50 dark:from-accent-900/20 dark:to-pink-900/20 rounded-2xl p-6 text-center border border-accent-100 dark:border-accent-800">
                 <svg className="w-12 h-12 text-accent-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
-                <p className="text-sm text-gray-900 font-medium mb-2">
+                <p className="text-sm text-gray-900 dark:text-gray-100 font-medium mb-2">
                   You've reached your collection limit
                 </p>
-                <p className="text-xs text-gray-600 mb-4">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">
                   Upgrade to Premium for unlimited collections
                 </p>
                 <Link to="/subscription">
@@ -252,12 +260,12 @@ const CollectionPage: React.FC = () => {
       {/* Create Collection Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-5 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
-            <h2 className="text-xl font-semibold text-gray-900 mb-5">Create New Collection</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-5">Create New Collection</h2>
             
             <form onSubmit={(e) => { e.preventDefault(); handleCreateCollection(); }} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Collection Name
                 </label>
                 <Input
@@ -272,8 +280,8 @@ const CollectionPage: React.FC = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description <span className="text-gray-400">(optional)</span>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Description <span className="text-gray-400 dark:text-gray-500">(optional)</span>
                 </label>
                 <textarea
                   name="description"
@@ -281,7 +289,7 @@ const CollectionPage: React.FC = () => {
                   onChange={handleInputChange}
                   rows={3}
                   placeholder="Add a description for your collection..."
-                  className="w-full px-4 py-3 bg-white rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all resize-none"
+                  className="w-full px-4 py-3 bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all resize-none text-gray-900 dark:text-gray-100"
                 />
               </div>
               
@@ -293,7 +301,7 @@ const CollectionPage: React.FC = () => {
                     onChange={(e) => setFormData(prev => ({ ...prev, isPublic: e.target.checked }))}
                     className="w-4 h-4 text-primary-600 bg-white border-gray-300 rounded focus:ring-primary-500"
                   />
-                  <span className="text-sm text-gray-700">
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
                     Make this collection public
                   </span>
                 </label>
