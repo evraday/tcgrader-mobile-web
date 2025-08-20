@@ -137,8 +137,14 @@ class ApiService {
 
   // Collection endpoints
   async getCollections() {
-    const response = await this.api.get('/api/collections');
-    return response.data;
+    try {
+      const response = await this.api.get('/api/collections');
+      return response.data;
+    } catch (error) {
+      // Return empty array if API fails (development fallback)
+      console.warn('Collections API failed, returning empty array');
+      return [];
+    }
   }
 
   async getCollection(id: string) {
