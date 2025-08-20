@@ -12,12 +12,13 @@ const GradesPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentMonthGrades, setCurrentMonthGrades] = useState(0);
 
-  const subscriptionLimits = user ? SUBSCRIPTION_LIMITS[user.isPremium ? 'premium' : 'free'] : null;
-  const remainingGrades = subscriptionLimits 
-    ? subscriptionLimits.gradesPerMonth === -1 
-      ? 'Unlimited' 
-      : Math.max(0, subscriptionLimits.gradesPerMonth - currentMonthGrades)
-    : 0;
+  // Get subscription limits based on user's subscription type
+  const subscriptionType = user?.subscription?.type || user?.role || 'free';
+  const subscriptionLimits = SUBSCRIPTION_LIMITS[subscriptionType] || SUBSCRIPTION_LIMITS.free;
+  
+  const userCredits = user?.credits || 0;
+  const creditLimit = subscriptionLimits.gradesPerMonth;
+  const remainingGrades = creditLimit === -1 ? 'Unlimited' : Math.max(0, userCredits);
 
   useEffect(() => {
     // TODO: Fetch grades from API
@@ -112,7 +113,7 @@ const GradesPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900 mb-1">My Grades</h1>
           <p className="text-gray-600">
             {grades.length} total grade{grades.length !== 1 ? 's' : ''} • 
-            {' '}{remainingGrades} remaining this month
+            {' '}Credits: {userCredits}/{creditLimit === -1 ? '∞' : creditLimit}
           </p>
         </header>
 
@@ -122,7 +123,7 @@ const GradesPage: React.FC = () => {
             <Button 
               fullWidth 
               variant="primary"
-              disabled={remainingGrades === 0}
+              disabled={userCredits === 0 && creditLimit !== -1}
               className="relative overflow-hidden group"
             >
               <div className="flex items-center justify-center space-x-2">
@@ -133,9 +134,9 @@ const GradesPage: React.FC = () => {
               </div>
             </Button>
           </Link>
-          {remainingGrades === 0 && (
+          {userCredits === 0 && creditLimit !== -1 && (
             <p className="text-sm text-red-600 mt-2 text-center">
-              Monthly grade limit reached. 
+              No credits remaining. 
               <Link to="/subscription" className="underline font-medium ml-1">Upgrade for more</Link>
             </p>
           )}
