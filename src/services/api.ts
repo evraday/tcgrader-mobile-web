@@ -82,9 +82,10 @@ class ApiService {
     return response.data;
   }
 
-  async updateProfile(data: FormData) {
+  async updateProfile(data: FormData | any) {
+    const isFormData = data instanceof FormData;
     const response = await this.api.patch('/api/user/profile', data, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : { 'Content-Type': 'application/json' }
     });
     return response.data;
   }

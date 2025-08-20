@@ -65,15 +65,8 @@ const ProfileEditPage: React.FC = () => {
     setError('');
 
     try {
-      // Create FormData for the update
-      const updateData = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value) {
-          updateData.append(key, value);
-        }
-      });
-
-      const response = await apiService.updateProfile(updateData);
+      // Send as JSON data for text fields
+      const response = await apiService.updateProfile(formData);
       if (response.user) {
         updateUser(response.user);
         navigate('/profile');
