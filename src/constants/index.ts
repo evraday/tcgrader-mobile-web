@@ -1,29 +1,50 @@
 import { SubscriptionType, SubscriptionLimits } from '../types';
 
-export const SUBSCRIPTION_LIMITS: Record<SubscriptionType, SubscriptionLimits> = {
-  [SubscriptionType.FREE]: {
+export const SUBSCRIPTION_LIMITS: Record<string, SubscriptionLimits> = {
+  free: {
     gradesPerMonth: 5,
     collectionsAllowed: 1,
     priceTrackingInterval: 'none',
     bulkOperations: false,
     apiAccess: false
   },
-  [SubscriptionType.BASIC]: {
+  basic: {
     gradesPerMonth: 25,
     collectionsAllowed: 5,
     priceTrackingInterval: 'daily',
     bulkOperations: false,
     apiAccess: false
   },
-  [SubscriptionType.PRO]: {
+  pro: {
     gradesPerMonth: 100,
     collectionsAllowed: -1, // unlimited
     priceTrackingInterval: 'realtime',
     bulkOperations: true,
     apiAccess: false
   },
-  [SubscriptionType.BUSINESS]: {
+  business: {
     gradesPerMonth: -1, // unlimited
+    collectionsAllowed: -1, // unlimited
+    priceTrackingInterval: 'realtime',
+    bulkOperations: true,
+    apiAccess: true
+  },
+  collector: {
+    gradesPerMonth: 100,
+    collectionsAllowed: -1, // unlimited
+    priceTrackingInterval: 'realtime',
+    bulkOperations: true,
+    apiAccess: true
+  },
+  appraiser: {
+    gradesPerMonth: 100,
+    collectionsAllowed: -1, // unlimited
+    priceTrackingInterval: 'realtime',
+    bulkOperations: true,
+    apiAccess: false
+  },
+  merchant: {
+    gradesPerMonth: 50,
     collectionsAllowed: -1, // unlimited
     priceTrackingInterval: 'realtime',
     bulkOperations: true,
@@ -35,7 +56,14 @@ export const SUBSCRIPTION_PRICES = {
   [SubscriptionType.FREE]: 0,
   [SubscriptionType.BASIC]: 4.99,
   [SubscriptionType.PRO]: 9.99,
-  [SubscriptionType.BUSINESS]: 29.99
+  [SubscriptionType.BUSINESS]: 29.99,
+  free: 0,
+  basic: 4.99,
+  pro: 9.99,
+  business: 29.99,
+  collector: 12.99,
+  appraiser: 9.99,
+  merchant: 9.99
 };
 
 export const API_BASE_URL = process.env.NODE_ENV === 'development' 

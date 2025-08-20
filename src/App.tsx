@@ -20,6 +20,8 @@ import PrivacyPage from './pages/settings/Privacy';
 import ContactPage from './pages/Contact';
 import HelpCenterPage from './pages/Help';
 import MarketPage from './pages/Market';
+import ProfileEditPage from './pages/ProfileEdit';
+import ActivityPage from './pages/Activity';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -39,26 +41,29 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // Apply theme
-    const effectiveTheme = user?.settings?.appearance?.theme || theme;
-    
-    if (effectiveTheme === 'dark' || (effectiveTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme, user?.settings?.appearance?.theme]);
+    const applyTheme = () => {
+      if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    };
 
-  // Sync user theme preference when user data changes
-  useEffect(() => {
-    if (user?.settings?.appearance?.theme && user.settings.appearance.theme !== theme) {
-      setTheme(user.settings.appearance.theme);
+    applyTheme();
+
+    // Listen for system theme changes when in 'system' mode
+    if (theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = () => applyTheme();
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
     }
-  }, [user?._id]); // Only run when user ID changes (login/logout)
+  }, [theme]);
 
   return (
     <Router>
-      <div className="md:bg-gray-100 min-h-screen">
-        <div className="md:mobile-container min-h-screen">
+      <div className="md:bg-gray-100 dark:md:bg-gray-900 min-h-screen">
+        <div className="md:mobile-container min-h-screen bg-white dark:bg-gray-900">
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
@@ -84,6 +89,12 @@ const App: React.FC = () => {
               </ProtectedRoute>
             } />
             
+            <Route path="/profile/edit" element={
+              <ProtectedRoute>
+                <ProfileEditPage />
+              </ProtectedRoute>
+            } />
+            
             <Route path="/subscription" element={
               <ProtectedRoute>
                 <SubscriptionPage />
@@ -93,6 +104,12 @@ const App: React.FC = () => {
             <Route path="/grades/submit" element={
               <ProtectedRoute>
                 <GradeSubmitPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/activity" element={
+              <ProtectedRoute>
+                <ActivityPage />
               </ProtectedRoute>
             } />
             

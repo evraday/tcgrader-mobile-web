@@ -21,7 +21,7 @@ const CollectionPage: React.FC = () => {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const subscriptionLimits = user ? SUBSCRIPTION_LIMITS[user.isPremium ? 'premium' : 'free'] : null;
+  const subscriptionLimits = user ? SUBSCRIPTION_LIMITS[user.subscription?.type || 'free'] : null;
   const canCreateCollection = subscriptionLimits && (
     subscriptionLimits.collectionsAllowed === -1 || 
     collections.length < subscriptionLimits.collectionsAllowed
@@ -33,8 +33,8 @@ const CollectionPage: React.FC = () => {
 
   const fetchCollections = async () => {
     try {
-      const response = await api.get('/collections');
-      setCollections(response.data);
+      const response = await api.getCollections();
+      setCollections(response);
     } catch (error) {
       console.error('Failed to fetch collections:', error);
     } finally {
@@ -60,13 +60,13 @@ const CollectionPage: React.FC = () => {
     
     setIsCreating(true);
     try {
-      const response = await api.post('/collections', {
+      const response = await api.createCollection({
         name: formData.name.trim(),
         description: formData.description.trim(),
         isPublic: formData.isPublic
       });
       
-      addCollection(response.data);
+      addCollection(response);
       setShowCreateModal(false);
       setFormData({ name: '', description: '', isPublic: false });
     } catch (error: any) {

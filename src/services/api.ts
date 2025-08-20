@@ -33,6 +33,14 @@ class ApiService {
           // Token expired or invalid
           useAuthStore.getState().logout();
         }
+        
+        // Enhance error message
+        const errorMessage = error.response?.data?.message || 
+                           error.response?.data?.error || 
+                           error.message || 
+                           'An unexpected error occurred';
+        
+        error.message = errorMessage;
         return Promise.reject(error);
       }
     );
@@ -217,6 +225,12 @@ class ApiService {
 
   async updateGradeStatus(id: string, status: string, data?: any) {
     const response = await this.api.patch(`/api/grades/${id}/status`, { status, ...data });
+    return response.data;
+  }
+
+  // Market endpoints
+  async getTopPerformers(period: 'day' | 'week' | 'month' = 'month') {
+    const response = await this.api.get('/api/market/top-performers', { params: { period } });
     return response.data;
   }
 
