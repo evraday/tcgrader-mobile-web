@@ -22,6 +22,7 @@ import HelpCenterPage from './pages/Help';
 import MarketPage from './pages/Market';
 import ProfileEditPage from './pages/ProfileEdit';
 import ActivityPage from './pages/Activity';
+import TopPerformersPage from './pages/TopPerformers';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -70,6 +71,7 @@ const App: React.FC = () => {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/market" element={<MarketPage />} />
+            <Route path="/market/top-performers" element={<TopPerformersPage />} />
             
             <Route path="/collection" element={
               <ProtectedRoute>
