@@ -216,9 +216,22 @@ const NotificationsPage: React.FC = () => {
     try {
       // Convert notifications array to API format
       const emailSettings = notifications.reduce((acc, notif) => {
-        const key = notif.id.split('_').map((word, index) => 
-          index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1)
-        ).join('');
+        // Map notification IDs to the expected API format
+        const keyMap: { [key: string]: string } = {
+          'grade_updates': 'gradeUpdates',
+          'grade_status': 'statusChanges',
+          'grade_ready': 'gradeReady',
+          'subscription_renewal': 'subscriptionRenewal',
+          'payment_receipts': 'paymentReceipts',
+          'security_alerts': 'securityAlerts',
+          'newsletter': 'newsletter',
+          'promotions': 'promotions',
+          'product_updates': 'productUpdates',
+          'price_alerts': 'priceAlerts',
+          'collection_updates': 'collectionActivity'
+        };
+        
+        const key = keyMap[notif.id] || notif.id;
         acc[key] = notif.enabled;
         return acc;
       }, {} as any);
@@ -229,20 +242,29 @@ const NotificationsPage: React.FC = () => {
         sms: user?.settings?.notifications?.sms || {}
       };
 
-      await apiService.updateNotificationSettings(settings);
+      const response = await apiService.updateNotificationSettings(settings);
       
-      // Update local user state
-      useAuthStore.getState().updateUser({
-        settings: {
-          ...user?.settings,
-          notifications: settings
-        }
-      });
+      // Update local user state with the response data
+      if (response?.user) {
+        useAuthStore.getState().updateUser(response.user);
+      } else {
+        // Fallback to manual update if response doesn't include user
+        useAuthStore.getState().updateUser({
+          settings: {
+            ...user?.settings,
+            notifications: settings
+          }
+        });
+      }
       
       setHasChanges(false);
-    } catch (error) {
+      // Show success message
+      alert('Notification preferences saved successfully!');
+    } catch (error: any) {
       console.error('Failed to save notification preferences:', error);
-      alert('Failed to save notification preferences. Please try again.');
+      // Show more specific error message if available
+      const errorMessage = error?.response?.data?.message || 'Failed to save notification preferences. Please try again.';
+      alert(errorMessage);
     } finally {
       setIsSaving(false);
     }
