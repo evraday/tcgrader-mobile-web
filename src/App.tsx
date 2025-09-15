@@ -8,6 +8,7 @@ import TabBar from './components/navigation/TabBar';
 import HomePage from './pages/Home';
 import LoginPage from './pages/Login';
 import RegisterPage from './pages/Register';
+import ForgotPasswordPage from './pages/ForgotPassword';
 import CollectionPage from './pages/Collection';
 import GradesPage from './pages/Grades';
 import SearchPage from './pages/Search';
@@ -69,6 +70,7 @@ const App: React.FC = () => {
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/market" element={<MarketPage />} />
             <Route path="/market/top-performers" element={<TopPerformersPage />} />
