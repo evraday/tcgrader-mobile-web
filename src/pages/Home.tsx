@@ -8,7 +8,7 @@ import { SUBSCRIPTION_LIMITS } from '../constants';
 
 const HomePage: React.FC = () => {
   const { isAuthenticated, user } = useAuthStore();
-  const [scrollY, setScrollY] = useState(0);
+  const [, setScrollY] = useState(0);
   const [portfolioStats, setPortfolioStats] = useState({
     totalCards: 0,
     portfolioValue: 0,
@@ -532,7 +532,7 @@ const HomePage: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4 mb-6">
-                {recentGrades.map((card, index) => (
+                {recentGrades.map((card) => (
                   <div key={card._id} className="group cursor-pointer">
                     <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 dark:border-gray-700">
                       <div className="aspect-[3/4] relative overflow-hidden bg-gray-50 dark:bg-gray-900">
