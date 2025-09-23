@@ -127,19 +127,19 @@
   }
 
   .btn-secondary {
-    @apply bg-white text-gray-800 border border-gray-200;
+    @apply bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .btn-secondary:hover:not(:disabled) {
-    @apply border-gray-300 bg-gray-50;
+    @apply border-gray-300 dark:border-gray-500 bg-gray-50 dark:bg-gray-700;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.08);
   }
   
   .btn-secondary:active:not(:disabled) {
     transform: translateY(0);
-    @apply bg-gray-100;
+    @apply bg-gray-100 dark:bg-gray-600;
   }
   
   .btn-accent {
@@ -232,6 +232,10 @@
   .safe-area-top {
     padding-top: env(safe-area-inset-top);
   }
+
+  .top-safe {
+    top: calc(1rem + env(safe-area-inset-top));
+  }
   
   @keyframes shimmer {
     0% { background-position: -200% center; }
@@ -301,5 +305,30 @@
     body {
       background-color: var(--color-background-desktop);
     }
+  }
+
+  /* Premium tap targets */
+  .tap-target {
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .tap-target:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease-out;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Premium focus states */
+  *:focus {
+    outline: none;
+  }
+
+  *:focus-visible {
+    ring-offset-width: 2px;
   }
 }

@@ -12,13 +12,32 @@ interface CardData {
   _id: string;
   name: string;
   type: string;
-  grades: {
+  grades?: {
     overall: number;
   };
-  images: {
-    frontUrl: string;
-    backUrl: string;
+  gradingResults?: Array<{
+    scores?: {
+      overall: number;
+    };
+    overall?: number;
+  }>;
+  raw?: {
+    combined?: {
+      scores?: {
+        overall: number;
+      };
+      overall?: number;
+    };
   };
+  images?: {
+    frontUrl?: string;
+    backUrl?: string;
+    front?: string;
+    back?: string;
+  };
+  imageUrl?: string;
+  image?: string;
+  frontImage?: string;
 }
 
 interface CardStats {
@@ -60,18 +79,27 @@ const ProfilePage: React.FC = () => {
         apiService.getMyListings()
       ]);
       
-      const userCards = cardsResponse.cards || [];
+      const userCards = Array.isArray(cardsResponse) ? cardsResponse : (cardsResponse.cards || cardsResponse || []);
       setCards(userCards);
 
-      const userCollections = collectionsResponse || [];
+      const userCollections = Array.isArray(collectionsResponse) ? collectionsResponse : (collectionsResponse.collections || []);
       setCollections(userCollections);
 
       const userListings = listingsResponse?.listings || [];
 
-      // Calculate stats
+      // Calculate stats - handle both v1/dual-ai and v2 structures
       const totalCards = userCards.length;
-      const avgGrade = totalCards > 0 
-        ? userCards.reduce((sum: number, card: CardData) => sum + ((card.grades && card.grades.overall) || 0), 0) / totalCards 
+      const cardsWithGrades = userCards.filter((card: CardData) => {
+        const latestGrade = card.gradingResults?.[0] || card.raw?.combined;
+        return latestGrade?.scores?.overall || latestGrade?.overall;
+      });
+      
+      const avgGrade = cardsWithGrades.length > 0 
+        ? cardsWithGrades.reduce((sum: number, card: CardData) => {
+            const latestGrade = card.gradingResults?.[0] || card.raw?.combined;
+            const score = latestGrade?.scores?.overall || latestGrade?.overall || 0;
+            return sum + score;
+          }, 0) / cardsWithGrades.length 
         : 0;
       
       const marketplaceListings = userListings.length;
@@ -154,7 +182,7 @@ const ProfilePage: React.FC = () => {
                 )}
               </div>
               {user.subscription?.type !== 'free' && (
-                <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-accent-500 rounded-full flex items-center justify-center border-3 border-white">
+                <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-accent-500 rounded-full flex items-center justify-center border-3 border-white dark:border-gray-800">
                   <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                   </svg>
@@ -174,7 +202,7 @@ const ProfilePage: React.FC = () => {
                 {user.subscription?.type === 'merchant' ? 'Merchant' : user.subscription?.type || 'Free'} Member
               </div>
               {user.role === 'admin' && (
-                <div className="px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-700">
+                <div className="px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
                   Admin
                 </div>
               )}
@@ -183,7 +211,6 @@ const ProfilePage: React.FC = () => {
             <Button 
               fullWidth 
               variant="secondary" 
-              className="hover:bg-gray-50"
               onClick={() => navigate('/profile/edit')}
             >
               <div className="flex items-center justify-center space-x-2">
@@ -266,7 +293,7 @@ const ProfilePage: React.FC = () => {
           </div>
           
           <Link to="/subscription">
-            <Button fullWidth variant="secondary" className="bg-white text-primary-600 hover:bg-gray-50">
+            <Button fullWidth variant="secondary" className="bg-white dark:bg-white/10 text-primary-600 dark:text-white hover:bg-gray-50 dark:hover:bg-white/20 border-0">
               {user.subscription?.type !== 'free' ? 'Manage Plan' : 'Upgrade to Premium'}
             </Button>
           </Link>
@@ -277,39 +304,62 @@ const ProfilePage: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm mb-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-medium text-gray-900 dark:text-gray-100">Recent Cards</h3>
-              <Link to="/collection" className="text-xs text-primary-600 hover:text-primary-700 font-medium">
+              <Link to="/grades" className="text-xs text-primary-600 hover:text-primary-700 font-medium">
                 View All
               </Link>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              {cards.slice(0, 3).map((card) => (
-                <div key={card._id} className="relative">
-                  {card.images?.frontUrl ? (
-                    <img 
-                      src={card.images.frontUrl.startsWith('http') ? card.images.frontUrl : `https://www.tcgrader.com${card.images.frontUrl}`} 
-                      alt={card.name}
-                      className="w-full aspect-[3/4] object-cover rounded-lg"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.onerror = null;
-                        target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI2NyIgdmlld0JveD0iMCAwIDIwMCAyNjciIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyNjciIGZpbGw9IiNlNWU3ZWIiLz4KICA8cGF0aCBkPSJNMTAwIDgzQzg5LjUwNjYgODMgODEgOTEuNTA2NiA4MSAxMDJWMTQ0QzgxIDE1NC40OTMgODkuNTA2NiAxNjMgMTAwIDE2M0MxMTAuNDkzIDE2MyAxMTkgMTU0LjQ5MyAxMTkgMTQ0VjEwMkMxMTkgOTEuNTA2NiAxMTAuNDkzIDgzIDEwMCA4M1oiIGZpbGw9IiM5Y2EzYWYiLz4KICA8cGF0aCBkPSJNODUgMTc1SDExNVYxODdIODVWMTc1WiIgZmlsbD0iIzljYTNhZiIvPgo8L3N2Zz4=';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full aspect-[3/4] bg-gray-200 rounded-lg flex items-center justify-center">
-                      <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  )}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 rounded-b-lg">
-                    <p className="text-xs text-white font-medium truncate">{card.name}</p>
-                    {card.grades && card.grades.overall && (
-                      <p className="text-xs text-white/80">Grade: {card.grades.overall}</p>
+              {cards.slice(0, 3).map((card) => {
+                const latestGrade = card.gradingResults?.[0] || card.raw?.combined;
+                const overallScore = latestGrade?.scores?.overall || latestGrade?.overall;
+                
+                // Get image URL with proper fallbacks
+                const imageUrl = card.images?.frontUrl || 
+                                card.images?.front || 
+                                card.imageUrl || 
+                                card.image || 
+                                card.frontImage;
+                
+                return (
+                  <div key={card._id} className="relative">
+                    {imageUrl ? (
+                      <img 
+                        src={imageUrl.startsWith('http') ? imageUrl : `https://www.tcgrader.com${imageUrl}`} 
+                        alt={card.name}
+                        className="w-full aspect-[3/4] object-cover rounded-lg"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null;
+                          target.src = 'https://www.tcgrader.com/images/card-placeholder.png';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full aspect-[3/4] bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                        <svg className="w-12 h-12 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
                     )}
+                    {overallScore && (
+                      <div className={`absolute top-1 right-1 px-1.5 py-0.5 rounded text-xs font-bold text-white ${
+                        overallScore >= 9 ? 'bg-green-600' :
+                        overallScore >= 8 ? 'bg-blue-600' :
+                        overallScore >= 7 ? 'bg-yellow-600' :
+                        overallScore >= 6 ? 'bg-orange-600' :
+                        'bg-red-600'
+                      }`}>
+                        {overallScore}
+                      </div>
+                    )}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 rounded-b-lg">
+                      <p className="text-xs text-white font-medium truncate">{card.name}</p>
+                      {overallScore && (
+                        <p className="text-xs text-white/80">AI Grade: {overallScore}/10</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -356,7 +406,7 @@ const ProfilePage: React.FC = () => {
                   onClick={() => handleThemeChange(themeOption)}
                   className={`p-3 rounded-xl border-2 transition-all ${
                     theme === themeOption
-                      ? 'border-primary-500 bg-primary-50'
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                       : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-500'
                   }`}
                 >
@@ -374,7 +424,7 @@ const ProfilePage: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v8m0-8a4 4 0 00-4 4m4-4a4 4 0 014 4" opacity="0.3" />
                     </svg>
                   )}
-                  <span className="text-xs font-medium capitalize">{themeOption}</span>
+                  <span className="text-xs font-medium capitalize text-gray-700 dark:text-gray-300">{themeOption}</span>
                 </button>
               ))}
             </div>
@@ -457,7 +507,7 @@ const ProfilePage: React.FC = () => {
             
             <Link to="/contact" className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-all group">
               <div className="flex items-center space-x-3">
-                <div className="w-9 h-9 bg-accent-100 rounded-lg flex items-center justify-center">
+                <div className="w-9 h-9 bg-accent-100 dark:bg-accent-900/30 rounded-lg flex items-center justify-center">
                   <svg className="w-5 h-5 text-accent-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
@@ -474,7 +524,7 @@ const ProfilePage: React.FC = () => {
             
             <a href="https://tcgrader.com/terms" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-all group">
               <div className="flex items-center space-x-3">
-                <div className="w-9 h-9 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                <div className="w-9 h-9 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
                   <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
@@ -491,7 +541,7 @@ const ProfilePage: React.FC = () => {
             
             <a href="https://tcgrader.com/privacy" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-all group">
               <div className="flex items-center space-x-3">
-                <div className="w-9 h-9 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                <div className="w-9 h-9 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
                   <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
@@ -513,7 +563,7 @@ const ProfilePage: React.FC = () => {
           fullWidth
           variant="secondary"
           onClick={handleLogout}
-          className="mb-8 bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:border-red-300"
+          className="mb-8 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 hover:border-red-300 dark:hover:border-red-700"
         >
           <div className="flex items-center justify-center space-x-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

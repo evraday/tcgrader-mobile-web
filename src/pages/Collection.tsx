@@ -9,22 +9,26 @@ import tcgraderLogo from '../assets/tcgrader-logo.png';
 import api from '../services/api';
 
 const CollectionPage: React.FC = () => {
-  const { collections, setCollections, addCollection } = useCollectionStore();
+  const { collections, setCollections, addCollection, updateCollection } = useCollectionStore();
   const { user } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCoverModal, setShowCoverModal] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isUpdatingCover, setIsUpdatingCover] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     isPublic: false
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [collectionCards, setCollectionCards] = useState<any[]>([]);
+  const [loadingCards, setLoadingCards] = useState(false);
 
   const subscriptionLimits = user ? SUBSCRIPTION_LIMITS[user.subscription?.type || 'free'] : null;
   const canCreateCollection = subscriptionLimits && (
     subscriptionLimits.collectionsAllowed === -1 || 
-    collections.length < subscriptionLimits.collectionsAllowed
+    (Array.isArray(collections) ? collections.length : 0) < subscriptionLimits.collectionsAllowed
   );
 
   useEffect(() => {
@@ -34,13 +38,73 @@ const CollectionPage: React.FC = () => {
   const fetchCollections = async () => {
     try {
       const response = await api.getCollections();
-      setCollections(response);
+      const collectionsData = Array.isArray(response) ? response : (response?.collections || []);
+      setCollections(collectionsData);
     } catch (error) {
       console.error('Failed to fetch collections:', error);
-      // Set empty array if API fails to prevent blank screen
       setCollections([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchCollectionCards = async (collectionId: string) => {
+    setLoadingCards(true);
+    try {
+      // First try to get the full collection data which might include cards
+      const collectionResponse = await api.getCollection(collectionId);
+      if (collectionResponse.cards && Array.isArray(collectionResponse.cards)) {
+        setCollectionCards(collectionResponse.cards);
+        console.log('Found cards in collection response:', collectionResponse.cards);
+      } else {
+        // If no cards in collection response, try the cards endpoint
+        const response = await api.get(`/api/collections/${collectionId}/cards`);
+        // Handle different response formats
+        const cards = response.cards || response.data || response || [];
+        setCollectionCards(Array.isArray(cards) ? cards : []);
+        console.log('Fetched cards from cards endpoint:', cards);
+      }
+    } catch (error) {
+      console.error('Failed to fetch collection cards:', error);
+      // Try one more time with a different endpoint structure
+      try {
+        const response = await api.get(`/api/collections/${collectionId}`);
+        if (response.cards && Array.isArray(response.cards)) {
+          setCollectionCards(response.cards);
+          console.log('Found cards in fallback collection response:', response.cards);
+        } else {
+          setCollectionCards([]);
+        }
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+        setCollectionCards([]);
+      }
+    } finally {
+      setLoadingCards(false);
+    }
+  };
+
+  const handleUpdateCover = async (collectionId: string, cardImageUrl: string) => {
+    setIsUpdatingCover(true);
+    try {
+      // Update the collection with the image URL
+      const updatedCollection = await api.updateCollection(collectionId, { coverImage: cardImageUrl });
+      
+      // Update local state immediately with the full image URL
+      // Use the store's update method instead of manually updating
+      useCollectionStore.getState().updateCollection(collectionId, { 
+        coverImage: updatedCollection.coverImage || cardImageUrl 
+      });
+      
+      // Force a re-render by fetching collections again
+      const updatedCollections = useCollectionStore.getState().collections;
+      setCollections([...updatedCollections]);
+      setShowCoverModal(null);
+      setCollectionCards([]);
+    } catch (error: any) {
+      console.error('Failed to update cover:', error);
+    } finally {
+      setIsUpdatingCover(false);
     }
   };
 
@@ -68,7 +132,14 @@ const CollectionPage: React.FC = () => {
         isPublic: formData.isPublic
       });
       
-      addCollection(response);
+      // Handle nested response structure
+      const newCollection = response.collection || response;
+      addCollection(newCollection);
+      
+      // Update the local collections array to trigger re-render
+      const updatedCollections = [...collections, newCollection];
+      setCollections(updatedCollections);
+      
       setShowCreateModal(false);
       setFormData({ name: '', description: '', isPublic: false });
     } catch (error: any) {
@@ -95,162 +166,224 @@ const CollectionPage: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-          <p className="mt-2 text-gray-600">Loading collections...</p>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
         </div>
       </div>
     );
   }
 
+  const totalValue = Array.isArray(collections) 
+    ? collections.reduce((sum, col) => sum + (col.value || 0), 0)
+    : 0;
+
+  const totalCards = Array.isArray(collections)
+    ? collections.reduce((sum, col) => sum + (col.cardCount || 0), 0)
+    : 0;
+
   return (
-    <div className="min-h-screen dark:bg-gray-900">
-      {/* Fixed Header */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 safe-area-top">
-        <div className="max-w-md mx-auto px-5 py-3">
+    <div className="min-h-screen dark:bg-black">
+      {/* Fixed Header - Premium Design */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 safe-area-top">
+        <div className="max-w-md mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link to="/">
-              <img src={tcgraderLogo} alt="TCGrader" className="h-10 w-auto" />
+              <img src={tcgraderLogo} alt="TCGrader" className="h-8 w-auto" />
             </Link>
-            <Link to="/profile">
-              <div className="flex items-center space-x-3 bg-gray-50 dark:bg-gray-700 rounded-full pl-3 pr-1 py-1 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all">
-                <div>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{user?.username || user?.name?.split(' ')[0]}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{user?.subscription?.type || 'Free'} Plan</p>
+            <Link to="/profile" className="tap-target">
+              {user?.avatar ? (
+                <img 
+                  src={`https://www.tcgrader.com${user.avatar}`} 
+                  alt={user.name} 
+                  className="w-8 h-8 rounded-full object-cover ring-2 ring-gray-100 dark:ring-gray-800"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-900 rounded-full flex items-center justify-center">
+                  <span className="text-xs font-semibold text-white">
+                    {user?.username?.charAt(0) || user?.name?.charAt(0)}
+                  </span>
                 </div>
-                {user?.avatar ? (
-                  <img 
-                    src={`https://www.tcgrader.com${user.avatar}`} 
-                    alt={user.name} 
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
-                      {user?.username?.charAt(0) || user?.name?.charAt(0)}
-                    </span>
-                  </div>
-                )}
-              </div>
+              )}
             </Link>
           </div>
         </div>
       </div>
 
-      <div className="max-w-md mx-auto px-5 py-6 pb-24 pt-24">
-        <header className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">My Collections</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            {collections.length} collection{collections.length !== 1 ? 's' : ''} • 
-            {' '}{subscriptionLimits?.collectionsAllowed === -1 ? 'Unlimited' : `${collections.length}/${subscriptionLimits?.collectionsAllowed}`} allowed
-          </p>
-        </header>
+      <div className="max-w-md mx-auto px-4 py-4 pb-24 pt-20">
+        {/* Header Section */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">Collections</h1>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Organize and track your graded cards
+            </p>
+          </div>
+        </div>
 
-        {collections.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm text-center">
-            <div className="w-20 h-20 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <svg className="w-10 h-10 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        {/* Stats Overview - Premium Card Design */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-2xl">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              {totalCards.toLocaleString()}
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Total Cards</div>
+          </div>
+          <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-2xl">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              ${totalValue.toLocaleString()}
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Total Value</div>
+          </div>
+        </div>
+
+        {/* Collections List */}
+        {!Array.isArray(collections) || collections.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="w-24 h-24 bg-gray-100 dark:bg-gray-900 rounded-3xl flex items-center justify-center mx-auto mb-4">
+              <svg className="w-12 h-12 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">No Collections Yet</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm mx-auto">
-              Create your first collection to start organizing your trading cards.
+            <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Start Your Collection</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-xs mx-auto">
+              Create collections to organize your graded cards and track their value
             </p>
-            {canCreateCollection ? (
-              <Button variant="primary" onClick={() => setShowCreateModal(true)}>
-                <div className="flex items-center space-x-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  <span>Create Collection</span>
-                </div>
+            {canCreateCollection && (
+              <Button 
+                variant="primary" 
+                onClick={() => setShowCreateModal(true)}
+                className="px-8"
+              >
+                Create First Collection
               </Button>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-sm text-red-600">
-                  Collection limit reached for your plan
-                </p>
-                <Link to="/subscription">
-                  <Button variant="accent">Upgrade Plan</Button>
-                </Link>
-              </div>
             )}
           </div>
         ) : (
-          <div className="space-y-4">
-            {canCreateCollection && (
-              <Button 
-                fullWidth 
-                onClick={() => setShowCreateModal(true)}
-                className="mb-4 bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 text-gray-700 dark:text-gray-300 hover:text-primary-600"
+          <div className="space-y-3">
+            {Array.isArray(collections) && collections.map((collection) => (
+              <Link 
+                key={collection._id || collection.id} 
+                to={`/collection/${collection._id || collection.id}`}
+                className="block"
               >
-                <div className="flex items-center justify-center space-x-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  <span>Create New Collection</span>
-                </div>
-              </Button>
-            )}
+                <div className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 transition-all group">
+                  <div className="relative">
+                    {/* Cover Image */}
+                    <div className="h-32 bg-gray-100 dark:bg-gray-800 relative overflow-hidden">
+                      {collection.coverImage ? (
+                        <img 
+                          src={collection.coverImage.startsWith('http') ? collection.coverImage : `https://www.tcgrader.com${collection.coverImage}`} 
+                          alt={collection.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900" />
+                      )}
+                      
+                      {/* Gradient Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      
+                      {/* Edit Cover Button */}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          const collectionId = collection._id || collection.id;
+                          setShowCoverModal(collectionId);
+                          fetchCollectionCards(collectionId);
+                        }}
+                        className="absolute top-3 right-3 p-2 bg-white/20 backdrop-blur-xl rounded-lg text-white hover:bg-white/30 transition-all"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </button>
 
-            {collections.map((collection) => (
-              <Link key={collection.id} to={`/collection/${collection.id}`}>
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-primary-600 transition-colors">
-                        {collection.name}
-                      </h3>
+                      {/* Collection Name Overlay */}
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <h3 className="text-lg font-semibold text-white">
+                          {collection.name}
+                        </h3>
+                      </div>
+                    </div>
+
+                    {/* Collection Info */}
+                    <div className="p-4">
                       {collection.description && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                           {collection.description}
                         </p>
                       )}
-                      <div className="flex items-center space-x-4 mt-3">
-                        <div className="flex items-center space-x-1">
-                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                          </svg>
-                          <span className="text-sm text-gray-500">{collection.cardCount || 0} cards</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span className="text-sm text-gray-500">${(collection.value || 0).toFixed(2)}</span>
-                        </div>
-                        {collection.isPublic && (
-                          <div className="flex items-center space-x-1">
-                            <svg className="w-4 h-4 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span className="text-sm text-success-600 font-medium">Public</span>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div>
+                            <div className="text-xl font-semibold text-gray-900 dark:text-white">
+                              {collection.cardCount || 0}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">Cards</div>
                           </div>
-                        )}
+                          <div className="w-px h-8 bg-gray-200 dark:bg-gray-800" />
+                          <div>
+                            <div className="text-xl font-semibold text-gray-900 dark:text-white">
+                              ${(collection.value || 0).toLocaleString()}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">Value</div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          {collection.isPublic && (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                              Public
+                            </span>
+                          )}
+                          <svg className="w-5 h-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
                       </div>
                     </div>
-                    <svg className="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
                   </div>
                 </div>
               </Link>
             ))}
 
-            {!canCreateCollection && collections.length > 0 && (
-              <div className="bg-gradient-to-br from-accent-50 to-pink-50 dark:from-accent-900/20 dark:to-pink-900/20 rounded-2xl p-6 text-center border border-accent-100 dark:border-accent-800">
-                <svg className="w-12 h-12 text-accent-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                <p className="text-sm text-gray-900 dark:text-gray-100 font-medium mb-2">
-                  You've reached your collection limit
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">
-                  Upgrade to Premium for unlimited collections
-                </p>
+            {/* Create New Collection Button */}
+            {canCreateCollection && (
+              <button 
+                onClick={() => setShowCreateModal(true)}
+                className="w-full p-6 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-2xl hover:border-gray-400 dark:hover:border-gray-600 transition-all group"
+              >
+                <div className="flex items-center justify-center space-x-3">
+                  <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center group-hover:bg-gray-200 dark:group-hover:bg-gray-700 transition-colors">
+                    <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </div>
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Create New Collection</span>
+                </div>
+              </button>
+            )}
+
+            {/* Upgrade Prompt */}
+            {!canCreateCollection && Array.isArray(collections) && collections.length > 0 && (
+              <div className="bg-gradient-to-r from-gray-900 to-black p-6 rounded-2xl text-white">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-1">Unlock Unlimited Collections</h3>
+                    <p className="text-sm text-gray-300">
+                      Upgrade to Premium to create unlimited collections and access advanced features
+                    </p>
+                  </div>
+                  <svg className="w-8 h-8 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                </div>
                 <Link to="/subscription">
-                  <Button size="sm" variant="accent">
-                    Upgrade to Premium
+                  <Button 
+                    size="sm" 
+                    className="bg-white text-gray-900 hover:bg-gray-100"
+                  >
+                    Upgrade Now
                   </Button>
                 </Link>
               </div>
@@ -259,13 +392,89 @@ const CollectionPage: React.FC = () => {
         )}
       </div>
 
+      {/* Cover Selection Modal */}
+      {showCoverModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50">
+          <div className="bg-white dark:bg-gray-900 rounded-t-3xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto animate-slide-up">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Select Cover Image</h2>
+              <button
+                onClick={() => {
+                  setShowCoverModal(null);
+                  setCollectionCards([]);
+                }}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {loadingCards ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
+              </div>
+            ) : collectionCards.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500 dark:text-gray-400">No cards in this collection yet</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-3">
+                {collectionCards.map((card) => (
+                  <button
+                    key={card.id || card._id}
+                    onClick={() => {
+                      const img = card.imageUrl || card.image || card.frontImage || card.images?.front || `/api/cards/${card.id || card._id}/image`;
+                      const fullImageUrl = img.startsWith('http') ? img : `https://www.tcgrader.com${img}`;
+                      handleUpdateCover(showCoverModal, fullImageUrl);
+                    }}
+                    disabled={isUpdatingCover}
+                    className="relative aspect-[3/4] rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500 transition-all"
+                  >
+                    <img 
+                      src={(() => {
+                        const img = card.imageUrl || card.image || card.frontImage || card.images?.front || `/api/cards/${card.id || card._id}/image`;
+                        return img.startsWith('http') ? img : `https://www.tcgrader.com${img}`;
+                      })()} 
+                      alt={card.name || card.title || 'Card'}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://www.tcgrader.com/images/card-placeholder.png';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="text-white text-xs font-medium">Select</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Create Collection Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-5 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-5">Create New Collection</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50">
+          <div className="bg-white dark:bg-gray-900 rounded-t-3xl p-6 w-full max-w-md animate-slide-up">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Create Collection</h2>
+              <button
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setFormData({ name: '', description: '', isPublic: false });
+                  setErrors({});
+                }}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
             
-            <form onSubmit={(e) => { e.preventDefault(); handleCreateCollection(); }} className="space-y-4">
+            <form onSubmit={(e) => { e.preventDefault(); handleCreateCollection(); }} className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Collection Name
@@ -275,7 +484,7 @@ const CollectionPage: React.FC = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  placeholder="e.g., Pokémon Cards"
+                  placeholder="e.g., Pokémon PSA 10s"
                   error={errors.name}
                   autoFocus
                 />
@@ -290,8 +499,8 @@ const CollectionPage: React.FC = () => {
                   value={formData.description}
                   onChange={handleInputChange}
                   rows={3}
-                  placeholder="Add a description for your collection..."
-                  className="w-full px-4 py-3 bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all resize-none text-gray-900 dark:text-gray-100"
+                  placeholder="Describe your collection..."
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all resize-none text-gray-900 dark:text-white"
                 />
               </div>
               
@@ -301,19 +510,21 @@ const CollectionPage: React.FC = () => {
                     type="checkbox"
                     checked={formData.isPublic}
                     onChange={(e) => setFormData(prev => ({ ...prev, isPublic: e.target.checked }))}
-                    className="w-4 h-4 text-primary-600 bg-white border-gray-300 rounded focus:ring-primary-500"
+                    className="w-5 h-5 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500"
                   />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                    Make this collection public
-                  </span>
+                  <div>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      Make this collection public
+                    </span>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Other users can view public collections
+                    </p>
+                  </div>
                 </label>
-                <p className="text-xs text-gray-500 mt-1 ml-7">
-                  Public collections can be viewed by other users
-                </p>
               </div>
               
               {errors.submit && (
-                <div className="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm">
+                <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl text-sm">
                   {errors.submit}
                 </div>
               )}

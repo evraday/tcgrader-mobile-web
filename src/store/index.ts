@@ -69,15 +69,15 @@ export const useCollectionStore = create<CollectionState>((set) => ({
   })),
   updateCollection: (id, updates) => set((state) => ({
     collections: state.collections.map((c) =>
-      c.id === id ? { ...c, ...updates } : c
+      (c.id === id || c._id === id) ? { ...c, ...updates } : c
     ),
-    activeCollection: state.activeCollection?.id === id
+    activeCollection: (state.activeCollection?.id === id || state.activeCollection?._id === id)
       ? { ...state.activeCollection, ...updates }
       : state.activeCollection
   })),
   deleteCollection: (id) => set((state) => ({
-    collections: state.collections.filter((c) => c.id !== id),
-    activeCollection: state.activeCollection?.id === id ? null : state.activeCollection
+    collections: state.collections.filter((c) => c.id !== id && c._id !== id),
+    activeCollection: (state.activeCollection?.id === id || state.activeCollection?._id === id) ? null : state.activeCollection
   }))
 }));
 

@@ -47,17 +47,23 @@ class ApiService {
   }
 
   // Auth endpoints
-  async login(email: string, password: string, captchaToken?: string) {
+  async login(email: string, password: string, captchaToken?: string, rememberMe?: boolean) {
     const response = await this.api.post('/api/auth/login', { 
       email, 
       password,
-      captchaToken: captchaToken || ''
+      captchaToken: captchaToken || '',
+      rememberMe: rememberMe || false
     });
     return response.data;
   }
 
-  async register(email: string, password: string, name: string) {
-    const response = await this.api.post('/api/auth/register', { email, password, name });
+  async register(email: string, password: string, username: string, captchaToken?: string) {
+    const response = await this.api.post('/api/auth/signup', { 
+      email, 
+      password, 
+      username,
+      captchaToken: captchaToken || ''
+    });
     return response.data;
   }
 
@@ -71,8 +77,41 @@ class ApiService {
     return response.data;
   }
 
-  async refreshToken() {
-    const response = await this.api.post('/api/auth/refresh');
+  async logout() {
+    const response = await this.api.post('/api/auth/logout');
+    return response.data;
+  }
+
+  async getAuthMe() {
+    const response = await this.api.get('/api/auth/me');
+    return response.data;
+  }
+
+  async changePassword(currentPassword: string, newPassword: string) {
+    const response = await this.api.post('/api/auth/change-password', {
+      currentPassword,
+      newPassword
+    });
+    return response.data;
+  }
+
+  async verifyEmail(token: string) {
+    const response = await this.api.post('/api/auth/verify-email', { token });
+    return response.data;
+  }
+
+  async generate2FA() {
+    const response = await this.api.post('/api/auth/generate-2fa');
+    return response.data;
+  }
+
+  async verify2FA(code: string) {
+    const response = await this.api.post('/api/auth/verify-2fa', { code });
+    return response.data;
+  }
+
+  async disable2FA(code: string) {
+    const response = await this.api.post('/api/auth/disable-2fa', { code });
     return response.data;
   }
 
@@ -84,55 +123,66 @@ class ApiService {
 
   async updateProfile(data: FormData | any) {
     const isFormData = data instanceof FormData;
-    const response = await this.api.patch('/api/user/profile', data, {
+    const response = await this.api.put('/api/user/profile', data, {
       headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : { 'Content-Type': 'application/json' }
     });
     return response.data;
   }
 
+  async uploadAvatar(image: File) {
+    const formData = new FormData();
+    formData.append('image', image);
+    const response = await this.api.post('/api/user/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  }
+
+  async getUserStats() {
+    const response = await this.api.get('/api/user/stats');
+    return response.data;
+  }
+
+  async getCreditHistory() {
+    const response = await this.api.get('/api/user/credit-history');
+    return response.data;
+  }
+
+  async getNotificationSettings() {
+    const response = await this.api.get('/api/user/notification-settings');
+    return response.data;
+  }
+
   async updateNotificationSettings(settings: any) {
-    const response = await this.api.patch('/api/user/settings/notifications', settings);
-    return response.data;
-  }
-
-  async updateSecuritySettings(settings: any) {
-    const response = await this.api.patch('/api/user/settings/security', settings);
-    return response.data;
-  }
-
-  async updatePrivacySettings(settings: any) {
-    const response = await this.api.patch('/api/user/settings/privacy', settings);
-    return response.data;
-  }
-
-  async requestDataExport() {
-    const response = await this.api.post('/api/user/data-export');
+    const response = await this.api.put('/api/user/notification-settings', settings);
     return response.data;
   }
 
   async deleteAccount(password: string) {
-    const response = await this.api.delete('/api/user/account', { data: { password } });
+    const response = await this.api.post('/api/user/delete-account', { 
+      password,
+      confirmation: 'DELETE'
+    });
     return response.data;
   }
 
-  // Subscription endpoints
-  async getSubscription() {
-    const response = await this.api.get('/api/subscription');
-    return response.data;
-  }
-
-  async createCheckoutSession(priceId: string) {
-    const response = await this.api.post('/api/subscription/checkout', { priceId });
+  // Payment/Subscription endpoints
+  async createCheckoutSession(planType: string, billingCycle: 'monthly' | 'yearly', selectedSubscriptions?: string[]) {
+    const response = await this.api.post('/api/payment/create-checkout', { 
+      planType, 
+      billingCycle,
+      selectedSubscriptions
+    });
     return response.data;
   }
 
   async cancelSubscription() {
-    const response = await this.api.post('/api/subscription/cancel');
+    const response = await this.api.post('/api/payment/cancel-subscription');
     return response.data;
   }
 
-  async getUsage() {
-    const response = await this.api.get('/api/subscription/usage');
+  async createCreditCheckout(creditAmount: number) {
+    const response = await this.api.post('/api/payment/create-credit-checkout', { creditAmount });
     return response.data;
   }
 
@@ -150,35 +200,84 @@ class ApiService {
 
   async getCollection(id: string) {
     const response = await this.api.get(`/api/collections/${id}`);
-    return response.data;
+    // Handle nested response structure
+    return response.data.collection || response.data;
   }
 
   async createCollection(data: { name: string; description?: string; isPublic: boolean }) {
     const response = await this.api.post('/api/collections', data);
-    return response.data;
+    // Handle nested response structure
+    return response.data.collection || response.data;
   }
 
-  async updateCollection(id: string, data: Partial<{ name: string; description?: string; isPublic: boolean }>) {
-    const response = await this.api.patch(`/api/collections/${id}`, data);
-    return response.data;
+  async updateCollection(id: string, data: Partial<{ name: string; description?: string; isPublic: boolean; coverImage?: string }>) {
+    const response = await this.api.put(`/api/collections/${id}`, data);
+    // Handle nested response structure
+    return response.data.collection || response.data;
   }
 
   async deleteCollection(id: string) {
     await this.api.delete(`/api/collections/${id}`);
   }
 
-  async addCardToCollection(collectionId: string, cardData: any) {
-    const response = await this.api.post(`/api/collections/${collectionId}/cards`, cardData);
+  async getCollectionCards(collectionId: string, params?: any) {
+    const response = await this.api.get(`/api/collections/${collectionId}/cards`, { params });
     return response.data;
   }
 
-  async removeCardFromCollection(collectionId: string, cardId: string) {
-    await this.api.delete(`/api/collections/${collectionId}/cards/${cardId}`);
+  async addCardsToCollection(collectionId: string, cardIds: string[]) {
+    const response = await this.api.post('/api/collections/add-cards', {
+      collectionId,
+      cardIds
+    });
+    return response.data;
+  }
+
+  async removeCardsFromCollection(collectionId: string, cardIds: string[]) {
+    const response = await this.api.post(`/api/collections/${collectionId}/remove-cards`, {
+      cardIds
+    });
+    return response.data;
+  }
+
+  async getCollectionAnalytics(collectionId: string) {
+    const response = await this.api.get(`/api/collections/${collectionId}/analytics`);
+    return response.data;
   }
 
   // Card endpoints
-  async searchCards(query: string, filters?: any) {
-    const response = await this.api.get('/api/cards/search', { params: { q: query, ...filters } });
+  async getGradedCards(params?: any) {
+    const response = await this.api.get('/api/cards/graded', { params });
+    return response.data;
+  }
+
+  async voteOnCard(cardId: string, vote: 'up' | 'down') {
+    const response = await this.api.post(`/api/cards/${cardId}/vote`, { vote });
+    return response.data;
+  }
+
+  async addCardComment(cardId: string, comment: string) {
+    const response = await this.api.post(`/api/cards/${cardId}/comments`, { comment });
+    return response.data;
+  }
+
+  async getCardComments(cardId: string) {
+    const response = await this.api.get(`/api/cards/${cardId}/comments`);
+    return response.data;
+  }
+
+  async reportCard(cardId: string, reason: string, details: string) {
+    const response = await this.api.post(`/api/cards/${cardId}/report`, { reason, details });
+    return response.data;
+  }
+
+  async getCardPrice(cardId: string) {
+    const response = await this.api.get(`/api/cards/${cardId}/price`);
+    return response.data;
+  }
+
+  async getCardPriceHistory(cardId: string) {
+    const response = await this.api.get(`/api/cards/${cardId}/price-history`);
     return response.data;
   }
 
@@ -187,17 +286,8 @@ class ApiService {
     return response.data;
   }
 
-  async scanCard(image: Blob) {
-    const formData = new FormData();
-    formData.append('image', image);
-    const response = await this.api.post('/api/cards/scan', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-    return response.data;
-  }
-
   async getPriceHistory(cardId: string, days: number = 30) {
-    const response = await this.api.get(`/api/cards/${cardId}/prices`, { params: { days } });
+    const response = await this.api.get(`/api/cards/${cardId}/price-history`);
     return response.data;
   }
 
@@ -206,70 +296,248 @@ class ApiService {
     return response.data;
   }
 
+  // Grading endpoints
+  async gradingStream(frontImage: File, backImage: File) {
+    const formData = new FormData();
+    formData.append('front', frontImage);
+    formData.append('back', backImage);
+    const response = await this.api.post('/api/grading/stream', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  }
+
+  async gradingStreamV2(frontImage: File, backImage: File) {
+    const formData = new FormData();
+    formData.append('front', frontImage);
+    formData.append('back', backImage);
+    const response = await this.api.post('/api/grading/stream-v2', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  }
+
+  async gradingStreamV4(frontImage: File, backImage: File) {
+    const formData = new FormData();
+    formData.append('front', frontImage);
+    formData.append('back', backImage);
+    const response = await this.api.post('/api/grading/stream-v4', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  }
+
+  async saveGradedCard(gradingResult: any, frontImageUrl: string, backImageUrl: string) {
+    const response = await this.api.post('/api/grading/save-card', {
+      gradingResult,
+      frontImageUrl,
+      backImageUrl
+    });
+    return response.data;
+  }
+
+  async getPriceEstimate(cardName: string, set: string, grade: number) {
+    const response = await this.api.post('/api/grading/price-estimate', {
+      cardName,
+      set,
+      grade
+    });
+    return response.data;
+  }
+
   // Marketplace endpoints
+  async getMarketplace(params?: any) {
+    const response = await this.api.get('/api/marketplace', { params });
+    return response.data;
+  }
+
+  async createMarketplaceListing(data: any) {
+    const response = await this.api.post('/api/marketplace', data);
+    return response.data;
+  }
+
+  async getMarketplaceListing(id: string) {
+    const response = await this.api.get(`/api/marketplace/listing/${id}`);
+    return response.data;
+  }
+
+  async updateMarketplaceListing(id: string, data: any) {
+    const response = await this.api.put(`/api/marketplace/listing/${id}`, data);
+    return response.data;
+  }
+
+  async deleteMarketplaceListing(id: string) {
+    const response = await this.api.delete(`/api/marketplace/listing/${id}`);
+    return response.data;
+  }
+
+  async makeOffer(listingId: string, offerAmount: number, message: string) {
+    const response = await this.api.post('/api/marketplace/offer', {
+      listingId,
+      offerAmount,
+      message
+    });
+    return response.data;
+  }
+
+  async placeBid(bidId: string, bidAmount: number) {
+    const response = await this.api.post(`/api/marketplace/bid/${bidId}`, { bidAmount });
+    return response.data;
+  }
+
+  async createTradeOffer(data: any) {
+    const response = await this.api.post('/api/marketplace/trade-offer', data);
+    return response.data;
+  }
+
   async getMyListings() {
     const response = await this.api.get('/api/marketplace/me');
     return response.data;
   }
 
-  // Grade endpoints
-  async getGrades() {
-    const response = await this.api.get('/api/grades');
-    return response.data;
-  }
-
-  async getGrade(id: string) {
-    const response = await this.api.get(`/api/grades/${id}`);
-    return response.data;
-  }
-
-  async createGradeSubmission(data: FormData) {
-    const response = await this.api.post('/api/grades/submit', data, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+  async getMyOffers(type?: 'sent' | 'received') {
+    const response = await this.api.get('/api/marketplace/offers/me', { 
+      params: type ? { type } : undefined 
     });
     return response.data;
   }
 
-  async updateGradeStatus(id: string, status: string, data?: any) {
-    const response = await this.api.patch(`/api/grades/${id}/status`, { status, ...data });
+  // Notification endpoints
+  async getNotifications(params?: any) {
+    const response = await this.api.get('/api/notifications', { params });
     return response.data;
   }
 
-  // Market endpoints
-  async getTopPerformers(period: 'day' | 'week' | 'month' = 'month') {
-    const response = await this.api.get('/api/market/top-performers', { params: { period } });
+  async getNotificationCount() {
+    const response = await this.api.get('/api/notifications/count');
     return response.data;
   }
 
-  // Price alert endpoints
-  async getPriceAlerts() {
-    const response = await this.api.get('/api/alerts');
+  async markNotificationRead(id: string) {
+    const response = await this.api.put(`/api/notifications/${id}/read`);
     return response.data;
   }
 
-  async createPriceAlert(data: any) {
-    const response = await this.api.post('/api/alerts', data);
+  async markAllNotificationsRead() {
+    const response = await this.api.post('/api/notifications/read-all');
     return response.data;
   }
 
-  async updatePriceAlert(id: string, data: any) {
-    const response = await this.api.patch(`/api/alerts/${id}`, data);
+  // Dashboard/Analytics endpoints
+  async getCollectionStats() {
+    const response = await this.api.get('/api/dashboard/collection-stats');
     return response.data;
   }
 
-  async deletePriceAlert(id: string) {
-    await this.api.delete(`/api/alerts/${id}`);
+  async getGradingStats() {
+    const response = await this.api.get('/api/dashboard/grading-stats');
+    return response.data;
   }
 
-  // Image upload
-  async uploadImage(file: Blob, type: 'card' | 'grade' | 'profile') {
+  async getMarketStats() {
+    const response = await this.api.get('/api/dashboard/market-stats');
+    return response.data;
+  }
+
+  async getRecentGrades() {
+    const response = await this.api.get('/api/dashboard/recent-grades');
+    return response.data;
+  }
+
+  async getGradeDistribution() {
+    const response = await this.api.get('/api/dashboard/grade-analysis/distribution');
+    return response.data;
+  }
+
+  // Public endpoints
+  async getPublicRecentGrades() {
+    const response = await this.api.get('/api/public/recent-grades');
+    return response.data;
+  }
+
+  async getPublicRecentListings() {
+    const response = await this.api.get('/api/public/recent-listings');
+    return response.data;
+  }
+
+  async getPublicRecentSales() {
+    const response = await this.api.get('/api/public/recent-sales');
+    return response.data;
+  }
+
+  async getPlatformStats() {
+    const response = await this.api.get('/api/stats');
+    return response.data;
+  }
+
+  async getApiVersion() {
+    const response = await this.api.get('/api/version');
+    return response.data;
+  }
+
+  // Upload endpoints
+  async uploadToS3(file: File) {
     const formData = new FormData();
-    formData.append('image', file);
-    formData.append('type', type);
-    const response = await this.api.post('/api/upload', formData, {
+    formData.append('file', file);
+    const response = await this.api.post('/api/upload/s3', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     return response.data;
+  }
+
+  async uploadTradeImages(images: File[]) {
+    const formData = new FormData();
+    images.forEach((image, index) => {
+      formData.append(`image${index}`, image);
+    });
+    const response = await this.api.post('/api/upload/trade-images', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  }
+
+  // Contact/Feedback endpoints
+  async sendContactMessage(name: string, email: string, message: string, captchaToken: string) {
+    const response = await this.api.post('/api/contact/send', {
+      name,
+      email,
+      message,
+      captchaToken
+    });
+    return response.data;
+  }
+
+  async sendFeedback(type: string, message: string) {
+    const response = await this.api.post('/api/feedback/send', {
+      type,
+      message
+    });
+    return response.data;
+  }
+
+  // Geocoding endpoint
+  async geocodeAddress(address: string) {
+    const response = await this.api.get('/api/geocoding', {
+      params: { address }
+    });
+    return response.data;
+  }
+
+  // Legacy compatibility methods - keeping for backward compatibility
+  async uploadImage(file: Blob, type: 'card' | 'grade' | 'profile') {
+    return this.uploadToS3(file as File);
+  }
+
+  async searchCards(query: string, filters?: any) {
+    return this.getGradedCards({ search: query, ...filters });
+  }
+
+  async getTopPerformers(period: 'day' | 'week' | 'month' = 'month') {
+    return this.getMarketStats();
+  }
+
+  async scanCard(image: Blob) {
+    return this.gradingStream(image as File, image as File);
   }
 
   // Generic methods for custom endpoints

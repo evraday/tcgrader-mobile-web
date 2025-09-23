@@ -176,6 +176,7 @@ export interface CardPrices {
 
 export interface Collection {
   id: string;
+  _id?: string; // MongoDB ID
   userId: string;
   name: string;
   description?: string;

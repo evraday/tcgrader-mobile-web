@@ -9,7 +9,10 @@ import HomePage from './pages/Home';
 import LoginPage from './pages/Login';
 import RegisterPage from './pages/Register';
 import CollectionPage from './pages/Collection';
+import CollectionDetailPage from './pages/CollectionDetail';
+import CollectionEditPage from './pages/CollectionEdit';
 import GradesPage from './pages/Grades';
+import GradeDetailPage from './pages/GradeDetail';
 import SearchPage from './pages/Search';
 import ProfilePage from './pages/Profile';
 import SubscriptionPage from './pages/Subscription';
@@ -19,6 +22,7 @@ import SecurityPage from './pages/settings/Security';
 import PrivacyPage from './pages/settings/Privacy';
 import ContactPage from './pages/Contact';
 import HelpCenterPage from './pages/Help';
+import ForgotPasswordPage from './pages/ForgotPassword';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -70,9 +74,29 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               } />
 
+              <Route path="/collection/:id" element={
+                <ProtectedRoute>
+                  <CollectionDetailPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/collection/:id/edit" element={
+                <ProtectedRoute>
+                  <CollectionEditPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
               <Route path="/grades" element={
                 <ProtectedRoute>
                   <GradesPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/grades/:id" element={
+                <ProtectedRoute>
+                  <GradeDetailPage />
                 </ProtectedRoute>
               } />
 

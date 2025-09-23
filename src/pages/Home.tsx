@@ -5,6 +5,7 @@ import Button from '../components/common/Button';
 import tcgraderLogo from '../assets/tcgrader-logo.png';
 import apiService from '../services/api';
 import { SUBSCRIPTION_LIMITS } from '../constants';
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 const HomePage: React.FC = () => {
   const { isAuthenticated, user } = useAuthStore();
@@ -13,6 +14,8 @@ const HomePage: React.FC = () => {
     totalCards: 0,
     portfolioValue: 0,
     avgGrade: 0,
+    monthlyChange: 0,
+    weeklyChange: 0,
     isLoading: true
   });
   const [topPerformers, setTopPerformers] = useState<any[]>([]);
@@ -25,6 +28,12 @@ const HomePage: React.FC = () => {
   });
   const [recentGrades, setRecentGrades] = useState<any[]>([]);
   const [recentGradesLoading, setRecentGradesLoading] = useState(true);
+  const [portfolioHistory, setPortfolioHistory] = useState<any[]>([]);
+  const [cardsHistory, setCardsHistory] = useState<any[]>([]);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [userCredits, setUserCredits] = useState<number>(0);
+  const [marketInsights, setMarketInsights] = useState<any>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<'30d' | '90d' | '365d'>('30d');
 
   // Get subscription limits based on user's subscription type
   const subscriptionType = user?.subscription?.type || user?.role || 'free';
@@ -38,79 +47,172 @@ const HomePage: React.FC = () => {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      fetchPortfolioData();
-      fetchTopPerformers();
+      fetchPortfolioStats();
+      fetchPortfolioHistory();
+      fetchActivityHistory();
+      fetchRecentActivityFeed();
+      fetchTopPerformingCards();
+      fetchUserCredits();
+      fetchMarketInsights();
     } else {
       fetchPublicStats();
       fetchRecentGrades();
     }
   }, [isAuthenticated, user]);
 
-  const fetchPortfolioData = async () => {
+  // Fetch portfolio statistics
+  const fetchPortfolioStats = async () => {
     try {
-      const response = await apiService.getMyCards();
-      const cards = response.cards || [];
-      
-      const totalCards = cards.length;
-      const avgGrade = totalCards > 0 
-        ? cards.reduce((sum: number, card: any) => sum + ((card.grades && card.grades.overall) || 0), 0) / totalCards 
-        : 0;
-      
-      // Estimate portfolio value (150 per card as placeholder)
-      const portfolioValue = totalCards * 150;
+      const response = await fetch('/api/user/portfolio/stats');
+      const data = await response.json();
       
       setPortfolioStats({
-        totalCards,
-        portfolioValue,
-        avgGrade: Math.round(avgGrade * 10) / 10,
+        totalCards: data.totalCards || 0,
+        portfolioValue: data.portfolioValue || 0,
+        avgGrade: data.avgGrade || 0,
+        monthlyChange: data.monthlyChange || 0,
+        weeklyChange: data.weeklyChange || 0,
         isLoading: false
       });
     } catch (error) {
-      console.error('Failed to fetch portfolio data:', error);
+      console.error('Failed to fetch portfolio stats:', error);
       setPortfolioStats(prev => ({ ...prev, isLoading: false }));
     }
   };
 
-  const fetchTopPerformers = async () => {
+  // Fetch portfolio history
+  const fetchPortfolioHistory = async (period: '30d' | '90d' | '365d' = '30d') => {
+    try {
+      const response = await fetch(`/api/user/portfolio/history?period=${period}`);
+      const data = await response.json();
+      
+      if (data.data && Array.isArray(data.data)) {
+        const formattedData = data.data.map((item: any) => ({
+          date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          value: item.value,
+          cards: item.totalCards
+        }));
+        setPortfolioHistory(formattedData);
+      }
+    } catch (error) {
+      console.error('Failed to fetch portfolio history:', error);
+    }
+  };
+
+  // Fetch activity history for the chart
+  const fetchActivityHistory = async () => {
+    try {
+      const response = await fetch('/api/user/activity/summary?period=7d');
+      const data = await response.json();
+      
+      if (data.data && Array.isArray(data.data)) {
+        const formattedData = data.data.map((item: any) => ({
+          date: new Date(item.date).toLocaleDateString('en-US', { weekday: 'short' }),
+          added: item.cardsAdded || 0,
+          graded: item.cardsGraded || 0
+        }));
+        setCardsHistory(formattedData);
+      }
+    } catch (error) {
+      console.error('Failed to fetch activity history:', error);
+    }
+  };
+
+  // Fetch recent activity feed
+  const fetchRecentActivityFeed = async () => {
+    try {
+      const response = await fetch('/api/user/activity/recent?limit=10');
+      const data = await response.json();
+      
+      if (data.activities && Array.isArray(data.activities)) {
+        const formattedActivities = data.activities.map((activity: any) => {
+          const timeDiff = new Date().getTime() - new Date(activity.timestamp).getTime();
+          const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+          const days = Math.floor(hours / 24);
+          
+          let timeAgo = '';
+          if (days > 0) {
+            timeAgo = `${days} day${days > 1 ? 's' : ''} ago`;
+          } else if (hours > 0) {
+            timeAgo = `${hours} hour${hours > 1 ? 's' : ''} ago`;
+          } else {
+            timeAgo = 'Just now';
+          }
+          
+          const icons: Record<string, string> = {
+            grade_completed: '✨',
+            cards_added: '📦',
+            price_alert: '📈',
+            milestone: '🎉'
+          };
+          
+          return {
+            type: activity.type,
+            icon: icons[activity.type] || '📌',
+            title: activity.title,
+            subtitle: activity.subtitle,
+            time: timeAgo,
+            value: activity.metadata?.valueChange ? `+$${activity.metadata.valueChange.toLocaleString()}` : null
+          };
+        });
+        setRecentActivity(formattedActivities.slice(0, 4));
+      }
+    } catch (error) {
+      console.error('Failed to fetch recent activity:', error);
+    }
+  };
+
+  // Fetch top performing cards
+  const fetchTopPerformingCards = async () => {
     try {
       setTopPerformersLoading(true);
-      const response = await apiService.getTopPerformers('month');
-      setTopPerformers(response.performers || []);
+      const response = await fetch('/api/user/cards/top-performers?limit=5');
+      const data = await response.json();
+      
+      if (data.cards && Array.isArray(data.cards)) {
+        setTopPerformers(data.cards.map((card: any) => ({
+          id: card.id,
+          name: card.name,
+          set: card.set,
+          grade: card.grade,
+          value: card.currentValue,
+          change: card.changePercent,
+          image: card.imageUrl
+        })));
+      }
     } catch (error) {
       console.error('Failed to fetch top performers:', error);
-      // Fallback data if API fails
-      setTopPerformers([
-        {
-          id: '1',
-          name: 'Pikachu Illustrator',
-          grade: 'PSA 9',
-          value: 375000,
-          change: 45.2,
-          image: '/api/placeholder/60/60',
-          game: 'pokemon'
-        },
-        {
-          id: '2',
-          name: 'Black Lotus (Alpha)',
-          grade: 'BGS 9.5',
-          value: 45000,
-          change: 22.8,
-          image: '/api/placeholder/60/60',
-          game: 'magic'
-        },
-        {
-          id: '3',
-          name: 'Michael Jordan Rookie',
-          grade: 'PSA 10',
-          value: 12500,
-          change: 15.3,
-          image: '/api/placeholder/60/60',
-          game: 'sports'
-        }
-      ]);
     } finally {
       setTopPerformersLoading(false);
     }
+  };
+
+  // Fetch user credits
+  const fetchUserCredits = async () => {
+    try {
+      const response = await fetch('/api/user/credits');
+      const data = await response.json();
+      setUserCredits(data.availableCredits || 0);
+    } catch (error) {
+      console.error('Failed to fetch user credits:', error);
+    }
+  };
+
+  // Fetch market insights
+  const fetchMarketInsights = async () => {
+    try {
+      const response = await fetch('/api/market/insights');
+      const data = await response.json();
+      setMarketInsights(data);
+    } catch (error) {
+      console.error('Failed to fetch market insights:', error);
+    }
+  };
+
+  // Handle period change for portfolio chart
+  const handlePeriodChange = (period: '30d' | '90d' | '365d') => {
+    setSelectedPeriod(period);
+    fetchPortfolioHistory(period);
   };
 
   const fetchPublicStats = async () => {
@@ -177,202 +279,322 @@ const HomePage: React.FC = () => {
           </div>
           
           {/* Main Content with padding for fixed header */}
-          <div className="max-w-md mx-auto px-5 py-6 pb-8 pt-24">
+          <div className="max-w-md mx-auto px-5 py-6 pb-24 pt-24">
           
           {/* Welcome Section */}
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
               Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {user?.username || user?.name?.split(' ')[0]}
             </h2>
-            <p className="text-gray-600 dark:text-gray-400">Here's your portfolio overview</p>
+            <p className="text-gray-600 dark:text-gray-400">Your portfolio is performing well today</p>
           </div>
 
-          {/* Portfolio Analytics Card */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm dark:shadow-lg mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Portfolio Value</h3>
-              <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-full">Live</span>
-            </div>
+          {/* Portfolio Value Card */}
+          <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl p-6 shadow-xl mb-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-16 -mb-16" />
             
-            <div className="mb-6">
-              <div className="flex items-baseline space-x-2">
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                  {portfolioStats.isLoading ? '...' : `$${portfolioStats.portfolioValue.toLocaleString()}`}
-                </h2>
-                {!portfolioStats.isLoading && portfolioStats.portfolioValue > 0 && (
-                  <div className="flex items-center text-success-600">
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                    </svg>
-                    <span className="text-sm font-semibold">12.5%</span>
-                  </div>
-                )}
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-medium text-white/80">Total Portfolio Value</h3>
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                  <span className="text-xs text-white/60">Live</span>
+                </div>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Estimated portfolio value</p>
-            </div>
+              
+              <div className="mb-4">
+                <div className="flex items-baseline space-x-3">
+                  <h2 className="text-4xl font-bold text-white">
+                    {portfolioStats.isLoading ? '...' : `$${portfolioStats.portfolioValue.toLocaleString()}`}
+                  </h2>
+                  {!portfolioStats.isLoading && portfolioStats.monthlyChange > 0 && (
+                    <div className="flex items-center bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
+                      <svg className="w-4 h-4 mr-1 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                      </svg>
+                      <span className="text-sm font-semibold text-white">{portfolioStats.monthlyChange}%</span>
+                      <span className="text-xs text-white/60 ml-1">30d</span>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-            {/* Mini Stats */}
-            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Cards</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {portfolioStats.isLoading ? '...' : portfolioStats.totalCards.toLocaleString()}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Credits</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{user?.credits || 0}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Avg. Grade</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {portfolioStats.isLoading ? '...' : portfolioStats.avgGrade}
-                </p>
+              {/* Quick Stats */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                  <p className="text-xs text-white/60 mb-1">Cards</p>
+                  <p className="text-lg font-semibold text-white">
+                    {portfolioStats.isLoading ? '...' : portfolioStats.totalCards}
+                  </p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                  <p className="text-xs text-white/60 mb-1">Avg Grade</p>
+                  <p className="text-lg font-semibold text-white">
+                    {portfolioStats.isLoading ? '...' : portfolioStats.avgGrade}
+                  </p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                  <p className="text-xs text-white/60 mb-1">7d Change</p>
+                  <p className="text-lg font-semibold text-white">
+                    {portfolioStats.isLoading ? '...' : `+${portfolioStats.weeklyChange}%`}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="mb-6">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Actions</h3>
-            <div className="grid grid-cols-4 gap-3">
-              <Link to="/collection" className="group">
-                <div className="bg-white dark:bg-gray-800 rounded-md p-4 shadow-sm hover:shadow-md dark:hover:shadow-xl transition-all text-center">
-                  <div className="w-10 h-10 bg-primary-50 rounded-md flex items-center justify-center mx-auto mb-2 group-hover:bg-primary-100 transition-colors">
-                    <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {/* Portfolio Chart */}
+          {portfolioHistory.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-lg mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Portfolio Performance</h3>
+                <div className="flex items-center space-x-2">
+                  <button 
+                    onClick={() => handlePeriodChange('30d')}
+                    className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
+                      selectedPeriod === '30d' 
+                        ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' 
+                        : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    30D
+                  </button>
+                  <button 
+                    onClick={() => handlePeriodChange('90d')}
+                    className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
+                      selectedPeriod === '90d' 
+                        ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' 
+                        : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    90D
+                  </button>
+                  <button 
+                    onClick={() => handlePeriodChange('365d')}
+                    className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
+                      selectedPeriod === '365d' 
+                        ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' 
+                        : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    1Y
+                  </button>
+                </div>
+              </div>
+              
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={portfolioHistory} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#0068f2" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#0068f2" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.3} />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#9ca3af"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis 
+                      stroke="#9ca3af"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => `$${value}`}
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        fontSize: '12px'
+                      }}
+                      formatter={(value: any) => [`$${value}`, 'Value']}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke="#0068f2" 
+                      strokeWidth={2}
+                      fillOpacity={1} 
+                      fill="url(#colorValue)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {/* Quick Actions & Grade CTA */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            {/* Grade New Card CTA */}
+            <Link to="/grades/submit" className="col-span-2">
+              <div className="bg-gradient-to-r from-accent-500 to-accent-600 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
+                
+                <div className="relative z-10 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-white font-semibold text-lg mb-1">Grade Your Cards</h3>
+                    <p className="text-white/80 text-sm">
+                      {userCredits} credits available
+                    </p>
+                  </div>
+                  <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </Link>
+
+            {/* Collection */}
+            <Link to="/collection" className="group">
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-md hover:shadow-lg transition-all h-full">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <svg className="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                     </svg>
                   </div>
-                  <p className="text-xs font-medium text-gray-700 dark:text-gray-300">Collection</p>
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100">Collections</h4>
                 </div>
-              </Link>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {portfolioStats.isLoading ? '...' : portfolioStats.totalCards}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Total cards</p>
+              </div>
+            </Link>
 
-              <Link to="/grades/submit" className="group">
-                <div className="bg-white dark:bg-gray-800 rounded-md p-4 shadow-sm hover:shadow-md dark:hover:shadow-xl transition-all text-center">
-                  <div className="w-10 h-10 bg-accent-50 rounded-md flex items-center justify-center mx-auto mb-2 group-hover:bg-accent-100 transition-colors">
-                    <svg className="w-5 h-5 text-accent-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            {/* Market Insights */}
+            <Link to="/market" className="group">
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-md hover:shadow-lg transition-all h-full">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-10 h-10 bg-success-100 dark:bg-success-900/30 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <svg className="w-5 h-5 text-success-600 dark:text-success-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                     </svg>
                   </div>
-                  <p className="text-xs font-medium text-gray-700 dark:text-gray-300">Submit</p>
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100">Market</h4>
                 </div>
-              </Link>
-
-              <Link to="/search" className="group">
-                <div className="bg-white dark:bg-gray-800 rounded-md p-4 shadow-sm hover:shadow-md dark:hover:shadow-xl transition-all text-center">
-                  <div className="w-10 h-10 bg-success-50 rounded-md flex items-center justify-center mx-auto mb-2 group-hover:bg-success-100 transition-colors">
-                    <svg className="w-5 h-5 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </div>
-                  <p className="text-xs font-medium text-gray-700 dark:text-gray-300">Search</p>
-                </div>
-              </Link>
-
-              <Link to="/grades" className="group">
-                <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all text-center relative">
-                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:bg-gray-200 transition-colors">
-                    <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                    </svg>
-                  </div>
-                  <p className="text-xs font-medium text-gray-700">Grades</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {user?.credits || 0}/{subscriptionLimits.gradesPerMonth === -1 ? '∞' : subscriptionLimits.gradesPerMonth}
-                  </p>
-                </div>
-              </Link>
-            </div>
+                <p className="text-2xl font-bold text-success-600">
+                  {marketInsights?.trending?.changePercent ? `+${marketInsights.trending.changePercent}%` : '+0%'}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {marketInsights?.trending?.category || 'Market'} trending
+                </p>
+              </div>
+            </Link>
           </div>
 
-          {/* Market Insights */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-5 shadow-sm dark:shadow-lg mb-6">
+          {/* Cards Activity Chart */}
+          {cardsHistory.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-lg mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Weekly Activity</h3>
+                <Link to="/activity" className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium">
+                  View All
+                </Link>
+              </div>
+              
+              <div className="h-32">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={cardsHistory} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.3} vertical={false} />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#9ca3af"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis 
+                      hide
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        fontSize: '12px'
+                      }}
+                    />
+                    <Bar dataKey="added" fill="#0068f2" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="graded" fill="#ee3f5b" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              
+              <div className="flex items-center justify-center space-x-6 mt-3">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-primary-500 rounded-full" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Cards Added</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-accent-500 rounded-full" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Cards Graded</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Recent Activity */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-lg mb-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium text-gray-900 dark:text-gray-100">Market Insights</h3>
-              <Link to="/market" className="text-xs text-primary-600 hover:text-primary-700 font-medium">View All</Link>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Recent Activity</h3>
+              <Link to="/activity" className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium">
+                View All
+              </Link>
             </div>
             
             <div className="space-y-3">
-              <div className="flex items-center justify-between py-2">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-orange-100 rounded-md flex items-center justify-center">
-                    <span className="text-sm">🔥</span>
+              {recentActivity.map((activity, index) => (
+                <div key={index} className="flex items-start space-x-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/30 rounded-xl transition-colors">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    activity.type === 'grade' ? 'bg-purple-100 dark:bg-purple-900/30' :
+                    activity.type === 'add' ? 'bg-primary-100 dark:bg-primary-900/30' :
+                    activity.type === 'price' ? 'bg-success-100 dark:bg-success-900/30' :
+                    'bg-accent-100 dark:bg-accent-900/30'
+                  }`}>
+                    <span className="text-lg">{activity.icon}</span>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Pokémon Cards</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Trending Up</p>
-                  </div>
-                </div>
-                <span className="text-sm font-semibold text-success-600">+18.2%</span>
-              </div>
-
-              <div className="flex items-center justify-between py-2">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-purple-100 rounded-md flex items-center justify-center">
-                    <span className="text-sm">✨</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Vintage MTG</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">High Demand</p>
-                  </div>
-                </div>
-                <span className="text-sm font-semibold text-success-600">+25.7%</span>
-              </div>
-
-              <div className="flex items-center justify-between py-2">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-100 rounded-md flex items-center justify-center">
-                    <span className="text-sm">⚾</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Sports Cards</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Stable</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                          {activity.title}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          {activity.subtitle}
+                        </p>
+                      </div>
+                      {activity.value && (
+                        <span className="text-sm font-semibold text-success-600 dark:text-success-400 ml-2">
+                          {activity.value}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      {activity.time}
+                    </p>
                   </div>
                 </div>
-                <span className="text-sm font-semibold text-gray-600">+2.1%</span>
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* Recent Activity Timeline */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-5 shadow-sm dark:shadow-lg mb-6">
+          {/* Top Performing Cards */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-lg mb-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium text-gray-900 dark:text-gray-100">Recent Activity</h3>
-              <Link to="/activity" className="text-xs text-primary-600 hover:text-primary-700 font-medium">View All</Link>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex space-x-3">
-                <div className="flex-shrink-0 w-2 h-2 bg-success-500 rounded-full mt-1.5"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Charizard VMAX graded PSA 10</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Value increased by $450 • 2 hours ago</p>
-                </div>
-              </div>
-
-              <div className="flex space-x-3">
-                <div className="flex-shrink-0 w-2 h-2 bg-primary-500 rounded-full mt-1.5"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Added 15 cards to collection</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Pokémon Evolving Skies • 5 hours ago</p>
-                </div>
-              </div>
-
-              <div className="flex space-x-3">
-                <div className="flex-shrink-0 w-2 h-2 bg-accent-500 rounded-full mt-1.5"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Price alert triggered</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Black Lotus reached $45,000 • 1 day ago</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Top Performers */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-5 shadow-sm dark:shadow-lg mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium text-gray-900 dark:text-gray-100">Top Performers</h3>
-              <span className="text-xs text-gray-500 dark:text-gray-400">Last 30 days</span>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Your Top Cards</h3>
+              <Link to="/collection?sort=value" className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium">
+                View All
+              </Link>
             </div>
             
             <div className="space-y-3">
@@ -381,80 +603,97 @@ const HomePage: React.FC = () => {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                 </div>
               ) : topPerformers.length > 0 ? (
-                topPerformers.slice(0, 3).map((performer) => (
+                topPerformers.slice(0, 3).map((card, index) => (
                   <Link 
-                    key={performer.id} 
-                    to={`/cards/${performer.id}`}
-                    className="flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md p-2 -m-2 transition-colors"
+                    key={card.id} 
+                    to={`/cards/${card.id}`}
+                    className="flex items-center space-x-4 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/30 rounded-xl transition-all group"
                   >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden flex-shrink-0">
-                        {performer.image ? (
+                    <div className="relative">
+                      <div className="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-lg overflow-hidden">
+                        {card.image && (
                           <img 
-                            src={performer.image.startsWith('http') ? performer.image : `https://www.tcgrader.com${performer.image}`}
-                            alt={performer.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.src = '/api/placeholder/60/60';
-                            }}
+                            src={card.image.startsWith('http') ? card.image : `https://www.tcgrader.com${card.image}`}
+                            alt={card.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform"
                           />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600">
-                            <svg className="w-6 h-6 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          </div>
                         )}
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{performer.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{performer.grade}</p>
+                      <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                        index === 0 ? 'bg-yellow-500' :
+                        index === 1 ? 'bg-gray-400' :
+                        'bg-orange-600'
+                      }`}>
+                        {index + 1}
                       </div>
                     </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        {card.name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {card.grade} • {card.set || 'Unknown Set'}
+                      </p>
+                    </div>
+                    
                     <div className="text-right">
                       <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        ${performer.value?.toLocaleString() || '0'}
+                        ${card.value?.toLocaleString() || '0'}
                       </p>
-                      <p className={`text-xs font-medium ${
-                        performer.change > 0 ? 'text-success-600' : 'text-red-600'
+                      <p className={`text-xs font-medium flex items-center justify-end ${
+                        card.change > 0 ? 'text-success-600' : 'text-red-600'
                       }`}>
-                        {performer.change > 0 ? '+' : ''}{performer.change}%
+                        {card.change > 0 ? (
+                          <svg className="w-3 h-3 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3 h-3 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                          </svg>
+                        )}
+                        {Math.abs(card.change)}%
                       </p>
                     </div>
                   </Link>
                 ))
               ) : (
-                <div className="text-center py-8">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No top performers data available</p>
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                  </div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">No cards graded yet</p>
+                  <Link to="/grades/submit" className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium">
+                    Grade your first card
+                  </Link>
                 </div>
               )}
             </div>
-            
-            {topPerformers.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                <Link 
-                  to="/market/top-performers" 
-                  className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center justify-center"
-                >
-                  View All Top Performers
-                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-              </div>
-            )}
           </div>
 
           {/* Premium CTA for Free Users */}
           {user?.subscription?.type === 'free' && (
-            <div className="bg-gray-900 dark:bg-primary-600 text-white rounded-lg p-6 text-center">
-              <h3 className="text-lg font-bold mb-2">Unlock Premium Features</h3>
-              <p className="text-sm text-gray-300 mb-4">Get unlimited grades, advanced analytics, and priority support</p>
-              <Link to="/subscription">
-                <Button variant="secondary" size="md" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700">
-                  Upgrade Now
-                </Button>
-              </Link>
+            <div className="bg-gradient-to-br from-gray-900 to-gray-800 dark:from-primary-600 dark:to-primary-700 rounded-2xl p-6 text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16" />
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
+              
+              <div className="relative z-10">
+                <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Unlock Premium Features</h3>
+                <p className="text-sm text-white/80 mb-4">Get unlimited grades, advanced analytics, and priority support</p>
+                <Link to="/subscription">
+                  <Button variant="secondary" size="md" className="bg-white text-gray-900 hover:bg-gray-100">
+                    Upgrade Now
+                  </Button>
+                </Link>
+              </div>
             </div>
           )}
           </div>
